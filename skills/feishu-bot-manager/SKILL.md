@@ -404,11 +404,10 @@ Agent 之间通信存在死循环风险。以下规则写入每个 Agent 的 SOU
         "workspace": "/root/.openclaw/workspace"
       },
       {
-        "id": "engineering-senior-developer",
-        "name": "bot-engineering-rapid-prototyper",
-        "workspace": "/root/.openclaw/agents/engineering-senior-developer/workspace",
-        "agentDir": "/root/.openclaw/agents/engineering-senior-developer/"
-
+        "id": "{new-agent-id}",
+        "name": "bot-{new-agent-id}",
+        "workspace": "/root/.openclaw/agents/{new-agent-id}/workspace",
+        "agentDir": "/root/.openclaw/agents/{new-agent-id}/"
       }
     ]
   },
@@ -419,10 +418,10 @@ Agent 之间通信存在死循环风险。以下规则写入每个 Agent 的 SOU
       "appSecret": "xxxx",
       "domain": "feishu",
       "accounts": {
-        "bot-engineering-rapid-prototyper": {
+        "bot-{new-agent-id}": {
           "appId": "xxx",
           "appSecret": "xxxx",
-          "botName": "bot-engineering-rapid-prototyper",
+          "botName": "bot-{new-agent-id}",
           "dmPolicy": "open",
           "allowFrom": [
             "*"
@@ -437,10 +436,10 @@ Agent 之间通信存在死循环风险。以下规则写入每个 Agent 的 SOU
   },
   "bindings": [
     {
-      "agentId": "engineering-rapid-prototyper",
+      "agentId": "{new-agent-id}",
       "match": {
         "channel": "feishu",
-        "accountId": "bot-engineering-rapid-prototyper"
+        "accountId": "bot-{new-agent-id}"
       }
     }
   ]
