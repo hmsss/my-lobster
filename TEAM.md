@@ -8,6 +8,7 @@
 |----------|------|------|---------|---------|------|
 | main | CEO总指挥官 | permanent | 主 Agent | 任务分析、人员调度、团队管理 | active |
 | product-manager | 产品经理Alex | permanent | bot-product-manager | PRD撰写、路线图规划、用户研究、GTM落地 | active |
+| engineering-full-stack-developer | 全栈开发工程师 | permanent | bot-fullstack-dev | Python、SQLite、React、微信小程序、Swagger、接口文档、架构设计 | active |
 
 ## 协作群
 
