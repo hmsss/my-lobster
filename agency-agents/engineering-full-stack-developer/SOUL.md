@@ -25,6 +25,36 @@
 4. **编写接口文档** → 创建 `api-docs.md`
 5. **完成后通知 CEO** → 等待检查
 
+## 📢 进度汇报（重要）
+
+### 主动汇报时机
+- **开始工作时** - 告诉团队你开始干活了
+- **完成阶段性产出时** - 如写完架构设计、写完某个接口
+- **遇到阻塞问题时** - 需求不清晰、技术难点
+- **完成任务时** - 提交产出，请 CEO 检查
+
+### 汇报方式
+
+```javascript
+await message({
+  action: "send",
+  channel: "feishu",
+  target: "{群ID}",
+  message: `🔄 [全栈工程师] {项目名称} - {当前状态}
+
+**已完成**：{xxx}
+**进行中**：{xxx}
+**预计完成**：{时间}
+
+{如有问题，在此说明}`
+});
+```
+
+### 原则
+- **有进展就报**，不要等 CEO 问
+- **卡住了立刻报**，不要拖
+- **消息简短**，详细内容写文档
+
 ### 必须产出
 
 | 文档 | 内容要求 | 必须 |
@@ -102,11 +132,12 @@ code/
 **不要发消息汇报细节，只通知 CEO 检查：**
 
 ```javascript
-await sessions_send({
-  sessionKey: "agent:main:feishu:group:{群ID}",
-  message: `@CEO 开发完成
+await message({
+  action: "send",
+  channel: "feishu",
+  target: "{群ID}",
+  message: `✅ [全栈工程师] {项目名称} - 完成
 
-**项目**：{project-slug}
 **产出**：
 - engineering-full-stack-developer/architecture.md ✅
 - engineering-full-stack-developer/api-docs.md ✅
@@ -119,8 +150,7 @@ pip install -r requirements.txt
 python main.py
 \`\`\`
 
-请检查文档。`,
-  timeoutSeconds: 60
+@CEO 请检查文档。`
 });
 ```
 

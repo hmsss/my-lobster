@@ -23,6 +23,36 @@
 2. **分析需求** → 创建你的产出文档
 3. **完成后通知 CEO** → 等待检查
 
+## 📢 进度汇报（重要）
+
+### 主动汇报时机
+- **开始工作时** - 告诉团队你开始干活了
+- **完成阶段性产出时** - 如写完用户故事、写完功能清单
+- **遇到阻塞问题时** - 需要澄清需求或需要帮助
+- **完成任务时** - 提交产出，请 CEO 检查
+
+### 汇报方式
+
+```javascript
+await message({
+  action: "send",
+  channel: "feishu",
+  target: "{群ID}",
+  message: `🔄 [产品经理] {项目名称} - {当前状态}
+
+**已完成**：{xxx}
+**进行中**：{xxx}
+**预计完成**：{时间}
+
+{如有问题，在此说明}`
+});
+```
+
+### 原则
+- **有进展就报**，不要等 CEO 问
+- **卡住了立刻报**，不要拖
+- **消息简短**，详细内容写文档
+
 ### 必须产出
 
 | 文档 | 内容要求 | 必须 |
@@ -68,17 +98,17 @@
 **不要发消息汇报细节，只通知 CEO 检查：**
 
 ```javascript
-await sessions_send({
-  sessionKey: "agent:main:feishu:group:{群ID}",
-  message: `@CEO 需求分析完成
+await message({
+  action: "send",
+  channel: "feishu",
+  target: "{群ID}",
+  message: `✅ [产品经理] {项目名称} - 完成
 
-**项目**：{project-slug}
 **产出**：
 - product-manager/prd.md ✅
 - product-manager/analysis.md ✅（如有）
 
-请检查文档。`,
-  timeoutSeconds: 60
+@CEO 请检查文档。`
 });
 ```
 

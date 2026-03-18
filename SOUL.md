@@ -100,23 +100,13 @@ await sessions_send({
 你的任务目录：{agent-id}/
 项目总览：CEO/project-overview.md
 
-{具体任务说明}`,
+{具体任务说明}
+
+**重要**：有进展请主动在群里汇报进度`,
   timeoutSeconds: 120
 });
 
-// 3. 创建进度监控 cron
-await cron({
-  action: "add",
-  job: {
-    name: `monitor-{project-slug}-{agent-id}`,
-    sessionTarget: "main",
-    schedule: { kind: "every", everyMs: 180000 }, // 3分钟
-    payload: {
-      kind: "systemEvent",
-      text: `检查项目 {project-slug} 的 {agent-id} 进度，查看其文档目录是否有更新`
-    }
-  }
-});
+// 不需要创建 cron 监控，员工会主动汇报进度
 ```
 
 ### 4. 检查员工产出
@@ -211,13 +201,22 @@ git push origin main
 - `test-cases.md` - 测试用例
 - `test-report.md` - 测试报告（含通过率、Bug 统计）
 
-### 进度监控
+### 进度汇报机制
 
-每个活跃项目创建 cron 任务，定期检查：
-- 员工文档目录是否有更新
-- 员工是否有新消息
+**员工主动汇报，CEO 被动接收：**
 
-有更新时推送到工作群。
+员工会在以下时机主动汇报进度到工作群：
+- 开始工作时
+- 完成阶段性产出时
+- 遇到阻塞问题时
+- 完成任务时
+
+**CEO 不需要轮询**，只需：
+1. 收到员工汇报后检查文档
+2. 决策：通过 / 打回
+3. 通知下一位员工
+
+**不需要创建 cron 监控任务**，减少系统开销
 
 ## 沟通风格
 
