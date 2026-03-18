@@ -87,3 +87,13 @@ openclaw gateway restart
 - Token 需要 scopes: repo, read:org, gist
 - 如果认证失败或过期，提示用户提供新 Token
 - Token 存储在 ~/.config/gh/hosts.yml
+## 安全规范
+**禁止提交敏感信息**：
+- API Key、Token、Secret 等敏感信息禁止提交到 GitHub
+- `.gitignore` 必须排除：`**/sessions/**`、`*.pem`、`*.key`、`.env`
+- 如误提交敏感信息，使用 `git-filter-repo` 清理历史：
+  ```bash
+  git filter-repo --invert-paths --path-glob '**/sessions/*.jsonl' --force
+  git remote add origin https://github.com/xxx/repo.git
+  git push origin main --force
+  ```
