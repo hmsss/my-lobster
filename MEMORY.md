@@ -18,6 +18,18 @@
 ### 机器人协作机制 (2026-03-19)
 **核心原理**：飞书不支持机器人 @ 机器人，使用 `sessions_send` 工具实现跨机器人协作。
 
+**前置配置（必须）**：
+```json
+// openclaw.json
+{
+  "tools": {
+    "sessions": { "visibility": "all" },
+    "agentToAgent": { "enabled": true }
+  }
+}
+```
+没有这两个配置，`sessions_send` 会被禁止！
+
 **协作流程**：
 ```
 CEO/机器人A --sessions_send--> 机器人B --message--> 工作群
