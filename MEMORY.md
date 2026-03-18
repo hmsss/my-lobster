@@ -15,6 +15,41 @@
 - 每次添加新 agent 需要从人才市场复制配置
 - 群聊协作优先保证"指派链路不断"：只把子任务指派给群内在场人员；任务说明 md 作为单一真相来源，CEO 负责持续更新
 
+### 机器人协作机制 (2026-03-19)
+**核心原理**：飞书不支持机器人 @ 机器人，使用 `sessions_send` 工具实现跨机器人协作。
+
+**协作流程**：
+```
+CEO/机器人A --sessions_send--> 机器人B --message--> 工作群
+     │                              │
+     └── message 推送进度 ──────────┘
+```
+
+**sessions_send 用法**：
+```javascript
+sessions_send({
+  sessionKey: "agent:{agent-id}:feishu:group:{chat-id}",
+  message: "@{触发词} {任务内容}",
+  timeoutSeconds: 120
+})
+```
+
+**Agent ID 与触发词**：
+| Agent ID | 角色 | 触发词 |
+|----------|------|--------|
+| product-manager | 产品经理 | @产品经理 |
+| engineering-full-stack-developer | 全栈工程师 | @全栈工程师 |
+| testing-senior-qa-engineer | 测试工程师 | @测试 |
+
+**进度推送格式**：
+- 🔄 `[机器人名]` 开始处理: {任务描述}
+- 🔄 `[机器人名]` 进度更新: {当前进度}
+- ✅ `[机器人名]` 任务完成: {结果摘要}
+
+**相关 Skills**：
+- `agent-collab` - 机器人协作指南
+- `task-monitor` - 任务监控（通过 HEARTBEAT 定期检查 Agent 进度）
+
 ### 招聘员工流程 (2026-03-18)
 `feishu-bot-manager` Skill 是纯指引型，无 CLI 命令，需手动配置：
 
