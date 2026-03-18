@@ -279,14 +279,14 @@ openclaw skills run feishu-bot-manager -- \
 │   │
 │   ├── {agent-id}/              
 │   │   ├── workspace/          # Agent工作目录
+│   │   │   └── AGENTS.md
+│   │   │   └── SOUL.md
+│   │   │   └── USER.md
+│   │   │   └── MEMORY.md
+│   │   │   └── IDENTITY.md
+│   │   │   └── HEARTBEAT.md
 │   │   ├── memory/             # 长期记忆
 │   │   ├── logs/
-│   │   └── AGENTS.md
-│   │   └── SOUL.md
-│   │   └── USER.md
-│   │   └── MEMORY.md
-│   │   └── IDENTITY.md
-│   │   └── HEARTBEAT.md
 
 
 **SESSION-STATE.md 初始内容：**
