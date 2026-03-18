@@ -1,9 +1,5 @@
 {
   "name": "feishu-bot-manager",
   "version": "1.1.0",
-  "description": "飞书机器人配置 + Agent 雇佣/创建一体化管理",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  }
+  "description": "飞书机器人配置 + Agent 雇佣/创建一体化管理"
 }
