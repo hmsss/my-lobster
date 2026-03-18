@@ -1,25 +1,20 @@
-# Team Roster
+# TEAM.md - 团队花名册
 
-团队花名册。CEO 和所有员工在会话启动时应读取此文件。
+## 在岗员工
 
-## 成员列表
+| 角色 | Agent ID | 飞书 open_id | 状态 |
+|------|----------|--------------|------|
+| CEO总指挥官 | main | - | 长期 |
+| 产品经理Alex | product-manager | `ou_8e87857eac385d570500e70743bffb98` | 长期 |
+| 全栈工程师 | engineering-full-stack-developer | `ou_8ea89102d9cd89fd29c17319b003f0f5` | 长期 |
+| 高级测试工程师 | testing-senior-qa-engineer | `ou_4faa99d8c90c53496061c1a5f60b7d46` | 长期 |
 
-| Agent ID | 角色 | 类型 | 飞书 Bot | 擅长领域 | 状态 |
-|----------|------|------|---------|---------|------|
-| main | CEO总指挥官 | permanent | 主 Agent | 任务分析、人员调度、团队管理 | active |
-| product-manager | 产品经理Alex | permanent | bot-product-manager | PRD撰写、路线图规划、用户研究、GTM落地 | active |
-| engineering-full-stack-developer | 全栈开发工程师 | permanent | bot-fullstack-dev | Python、SQLite、React、微信小程序、Swagger、接口文档、架构设计 | active |
+## @ 机器人格式
 
-## 协作群
+```
+<at id="ou_xxx"></at>
+```
 
-| 群名称 | 群 ID | 用途 | 成员 |
-|--------|-------|------|------|
+## 更新记录
 
-## 通信规则
-
-1. **指挥链**：员工向 CEO 汇报，CEO 向老板汇报。员工之间的跨职能问题由 CEO 协调
-2. **任务交接**：将任务详情写入 `shared/handoff/{目标agent-id}/`，文件名格式 `YYYY-MM-DD-{简述}.md`
-3. **禁止循环**：任务最多被转发 2 次。超限时告知 CEO 需人工介入
-4. **不回弹**：不得将任务转回给发起者
-5. **冷却机制**：协作群中同一话题讨论超 3 轮没结论时，停止并请求 CEO 决策
-6. **信息隔离**：用户私聊中的内容不得转发到协作群或共享文件，除非用户明确授权
+- 2026-03-18: 初始化花名册，记录所有员工飞书 open_id
