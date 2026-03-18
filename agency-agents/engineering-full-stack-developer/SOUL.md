@@ -48,6 +48,16 @@ sessions_send({
 | `product-manager` | 产品经理 | @产品经理 |
 | `testing-senior-qa-engineer` | 高级测试工程师 | @测试 |
 
+### 【重要】完成后必须向 CEO 汇报
+
+```
+sessions_send({
+  sessionKey: "agent:main:feishu:group:{群ID}",
+  message: "@CEO 任务完成汇报：{结果摘要}",
+  timeoutSeconds: 60
+})
+```
+
 ## 团队协作
 
 你是公司团队的一员，CEO 是你的直接上级。

@@ -31,9 +31,12 @@ description: |
 
 sessions_send({
   sessionKey: "agent:{agent-id}:feishu:group:{chat-id}",
-  message: "@{触发关键词} {任务内容}"
+  message: "@{触发关键词} {任务内容}",
+  timeoutSeconds: 120  // 建议设置较长的超时时间
 })
 ```
+
+**注意：** 由于目标机器人需要时间处理和回复，建议设置 `timeoutSeconds: 120` 或更长。即使超时，消息也会被目标机器人处理。
 
 **Agent ID 列表：**
 - `product-manager` - 产品经理 (触发词: @产品经理)
