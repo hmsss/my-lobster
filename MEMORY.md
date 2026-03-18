@@ -68,10 +68,29 @@
 openclaw gateway restart
 ```
 
+**Step 5: 获取机器人 open_id**
+部署新员工后，需获取机器人的飞书 open_id，用于群聊 @ 机器人：
+
+```bash
+# 1. 获取 app_access_token
+TOKEN=$(curl -s "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal" \
+  -d "app_id={app_id}&app_secret={app_secret}" | jq -r '.app_access_token')
+
+# 2. 获取机器人信息（包含 open_id）
+curl -s "https://open.feishu.cn/open-apis/bot/v3/info" \
+  -H "Authorization:Bearer $TOKEN" | jq '.bot.open_id'
+```
+
+**@ 机器人格式**：
+```
+<at id="ou_xxx"></at>
+```
+
 **踩坑记录：**
 - `jq` 命令写文件时若路径错误会清空文件，务必先备份
 - 备份目录需手动创建：`mkdir -p /root/.openclaw/backups/`
 - `openclaw skills run feishu-bot-manager` 不支持 CLI 参数，该 Skill 仅提供操作指引
+- 群成员 API 不返回机器人，需通过 `/bot/v3/info` 接口获取机器人 open_id
 
 ## 重要规则
 **my-lobster 仓库是配置维护仓库**：
