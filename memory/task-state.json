@@ -12,8 +12,8 @@
       "completedAt": null
     },
     "engineering-full-stack-developer": {
-      "status": "completed",
-      "currentTask": "dialect-music-player-dev",
+      "status": "working",
+      "currentTask": "fix-bugs-001-002",
       "startedAt": "2026-03-19T02:05:00+08:00",
       "lastCheckAt": "2026-03-19T02:22:00+08:00",
       "lastProgressAt": "2026-03-19T02:20:00+08:00",
@@ -21,8 +21,8 @@
       "completedAt": "2026-03-19T02:41:00+08:00"
     },
     "testing-senior-qa-engineer": {
-      "status": "idle",
-      "currentTask": null,
+      "status": "working",
+      "currentTask": "regression-test",
       "startedAt": null,
       "lastCheckAt": null,
       "lastProgressAt": null,
