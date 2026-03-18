@@ -8,6 +8,7 @@
 - **老板会主动干预**：如果有问题，老板会直接在群里指出，CEO 再另行安排
 - **实时关注群消息**：老板会实时关注群里的进度汇报
 - **项目信息完整性**：所有项目进度必须在群里汇报，保证信息透明
+- **不要问老板产品决策**：能自己决定的小事（如免费方案优先）直接决定，不要问老板
 - 执行任务时需展示完整过程 + 实时推送进度到飞书
 - 使用 message 工具发送进度到群聊
 
@@ -18,6 +19,27 @@
 - 人才市场位置：/root/.openclaw/workspace/agency-agents/
 - 每次添加新 agent 需要从人才市场复制配置
 - 群聊协作优先保证"指派链路不断"：只把子任务指派给群内在场人员；任务说明 md 作为单一真相来源，CEO 负责持续更新
+
+### 项目进度管理 (2026-03-19 新增)
+**问题**：CEO 下派任务后不检查员工产出，导致进度滞后未被及时发现
+
+**解决方案**：
+1. **下派任务后立即检查产出目录**：每次分配任务后，主动 `ls` 检查目标目录是否有新文件
+2. **主动轮询进度**：不要等员工汇报，定期检查 `progress.md` 和产出文件
+3. **进度同步到 progress.md**：每次检查后更新 `CEO/progress.md` 状态
+4. **不要重复分配已完成任务**：分配前先检查是否已有产出
+
+**检查清单**：
+```bash
+# 下派任务后，每隔几分钟检查一次
+ls -la projects/{project-slug}/{agent-dir}/
+
+# 发现新文件后立即审核
+cat projects/{project-slug}/{agent-dir}/{file}.md
+
+# 审核后更新进度
+# 编辑 CEO/progress.md
+```
 
 ### 机器人协作机制 (2026-03-19)
 **核心原理**：飞书不支持机器人 @ 机器人，使用 `sessions_send` 工具实现跨机器人协作。
@@ -33,6 +55,38 @@
 }
 ```
 没有这两个配置，`sessions_send` 会被禁止！
+
+**任务指派确认机制（重要）**：
+指派任务后必须确认对方收到，而不是发完就不管：
+1. 发送任务后，轮询检查目标 Agent 的会话日志
+2. 确认收到 → 停止轮询
+3. 未收到 → 再次通知
+4. 超时 3 次 → 向老板汇报异常
+
+```javascript
+// 指派任务后确认收到
+async function assignTaskWithConfirm(agentId, message, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    // 1. 发送任务
+    await sessions_send({ sessionKey: `agent:${agentId}:...`, message });
+    
+    // 2. 等待 10 秒
+    await sleep(10000);
+    
+    // 3. 检查会话日志是否有新活动
+    const lastActiveTime = await checkAgentLastActive(agentId);
+    if (lastActiveTime > sendTime) {
+      return { confirmed: true };  // 已收到
+    }
+    
+    // 4. 未收到，再次通知
+    if (i < maxRetries - 1) {
+      await sessions_send({ sessionKey: `agent:${agentId}:...`, message: `[重试] ${message}` });
+    }
+  }
+  return { confirmed: false };  // 超时，需人工介入
+}
+```
 
 **协作流程**：
 ```
