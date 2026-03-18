@@ -525,6 +525,21 @@ openclaw skills run feishu-bot-manager -- [options]
 - **修改agnets配置文件时**：注意要保证list中包含main的配置{ "id": "main",  "default": true,  "name": "CEO总指挥官", "workspace": "/root/.openclaw/workspace"},
 - **恢复**：如出问题可从备份恢复
 
+### 常见告警与处理
+
+- **Config warnings: `plugins.entries.skillhub` disabled but config is present**
+  - 含义：你的 `openclaw.json` 里存在 `plugins.entries.skillhub` 配置，但当前运行环境不允许加载该插件（不在 allowlist），属于“配置残留”告警。
+  - 处理（择一）：
+    - **不使用 skillhub**：从 `openclaw.json` 删除 `plugins.entries.skillhub`（或整个 `plugins.entries.skillhub` 节点）后再重启 Gateway。
+    - **需要使用 skillhub**：把 `skillhub` 加入 OpenClaw 的插件 allowlist（按你当前运行环境的 allowlist 配置方式执行），再重启 Gateway。
+
+- **重启 Gateway 阶段出现 `SIGTERM`**
+  - 含义：重启进程被外部中止（常见是执行超时、上层进程管理器终止、或 Gateway 启动阻塞）。
+  - 处理建议：
+    - 直接重试一次（有时 Gateway 正在退出/占用端口，第一次会被中止）
+    - 若你是在自动化/工具调用里执行，确保允许 Gateway 重启超过 30 秒
+    - 必要时改为手动重启 Gateway，再回来验证 `openclaw.json` 是否已写入预期配置
+
 ---
 
 ## 快速场景参考
