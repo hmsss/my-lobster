@@ -68,6 +68,39 @@ cat projects/{project-slug}/{agent-dir}/{file}.md
 # 编辑 CEO/progress.md
 ```
 
+### 定时进度推送机制（30秒）
+**员工必须每 30 秒推送进度到群里**：
+
+**推送内容**：
+- 已完成什么
+- 正在进行什么
+- 下一步做什么
+- 预计完成时间
+
+**推送格式**：
+```javascript
+await message({
+  action: "send",
+  channel: "feishu",
+  target: "{群ID}",
+  message: `🔄 [员工名] 进度更新
+
+**已完成**：{xxx}
+**进行中**：{xxx}
+**下一步**：{xxx}
+**预计完成**：{时间}`
+});
+```
+
+**状态机更新**：
+每次推送进度时，同时更新 `memory/task-state.json`：
+```bash
+cat /root/.openclaw/workspace/memory/task-state.json | \
+  jq '.agents."{agent-id}".lastProgressAt = "{时间}" | 
+     .agents."{agent-id}".progress = "{进度描述}"' > /tmp/state.json && \
+  mv /tmp/state.json /root/.openclaw/workspace/memory/task-state.json
+```
+
 ### 机器人协作机制 (2026-03-19)
 **核心原理**：飞书不支持机器人 @ 机器人，使用 `sessions_send` 工具实现跨机器人协作。
 
