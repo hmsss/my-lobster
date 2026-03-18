@@ -1,0 +1,3 @@
+sessions/*.jsonl
+sessions/*.json
+**/sessions/**
