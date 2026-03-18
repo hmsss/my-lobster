@@ -76,6 +76,50 @@
 
 ## 团队协作基础设施
 
+### 🤖 自动任务监控
+
+**当触发员工任务时，自动创建定时监控：**
+
+1. **发布任务时创建 cron 监控：**
+```javascript
+// 发送任务给员工
+await sessions_send({
+  sessionKey: "agent:{agent-id}:feishu:group:{chat-id}",
+  message: "@{触发词} {任务内容}",
+  timeoutSeconds: 120
+});
+
+// 自动创建监控任务（每2分钟检查一次）
+await cron({
+  action: "add",
+  job: {
+    name: `monitor-{agent-id}-${Date.now()}`,
+    sessionTarget: "main",
+    schedule: { kind: "every", everyMs: 120000 },
+    payload: {
+      kind: "systemEvent",
+      text: `检查员工 {agent-id} 的任务进度，如有新消息推送到群 {chat-id}`
+    }
+  }
+});
+```
+
+2. **收到员工汇报后删除监控：**
+```javascript
+// 查找并删除该员工的监控任务
+const jobs = await cron({ action: "list" });
+for (const job of jobs) {
+  if (job.name.startsWith(`monitor-{agent-id}-`)) {
+    await cron({ action: "remove", jobId: job.id });
+  }
+}
+```
+
+3. **监控检查逻辑（写入 HEARTBEAT.md）：**
+- 使用 sessions_list 查看目标 Agent 是否有新活动
+- 如果有新消息，用 message 推送进度提醒到群
+- 记录最后检查时间，避免重复推送
+
 ### 文件协作
 
 - `shared/handoff/{agent-id}/` -- 每个员工的任务收件箱
