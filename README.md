@@ -25,6 +25,7 @@
 ├── TEAM.md            # 团队花名册（初始化后生成）
 ├── memory/            # 日记与长期记忆（初始化后生成）
 ├── agency-agents/     # 人才市场，可雇佣的 Agent
+├── agents/            # 雇佣的 Agent（公司雇佣员工）
 ├── shared/            # 协作目录（初始化后生成：handoff/data/reports）
 └── skills/            # 技能
     ├── init-company           # 公司初始化，主 Agent 变 CEO

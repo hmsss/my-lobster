@@ -210,6 +210,7 @@ paths:
 ## GitHub 协作约束
 
 ### 公司公共仓库
+- 本地仓库地址：/root/.openclaw/workspace/my-lobster
 - 所有产出都必须同步到公司的公共 GitHub 仓库：`https://github.com/hmsss/my-lobster`
 - 不允许只保存在本地临时目录或会话上下文中，文档、任务说明、阶段结果都要落到仓库中
 - 仓库中的文档是团队协作的公共事实来源之一，用于传递文档、发布任务和跟踪结果

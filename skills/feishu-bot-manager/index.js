@@ -435,7 +435,7 @@ function decommissionMode(options) {
   console.log(`  账户 ID: ${accountId}`);
   console.log(`  移除绑定数: ${removedCount}`);
   console.log(`  账户状态: disabled`);
-  console.log('\n请同步更新 TEAM.md 移除该员工记录。');
+  console.log('\n请同步更新 /root/.openclaw/TEAM.md 移除该员工记录。');
   console.log('如需恢复，可从备份还原:');
   console.log(`  cp ${backupPath} ${CONFIG_PATH}`);
   console.log('─'.repeat(50) + '\n');

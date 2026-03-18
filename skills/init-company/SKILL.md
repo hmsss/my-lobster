@@ -66,7 +66,7 @@ memory/
 - [ ] 无
 
 ## 在岗员工快照
-[参见 TEAM.md]
+[参见 /root/.openclaw/TEAM.md]
 
 ---
 *公司初始化创建*
