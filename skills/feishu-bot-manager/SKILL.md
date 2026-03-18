@@ -75,7 +75,8 @@ invocations:
 用户选中候选后：
 
 1. 该 Agent 的目录名即为 `agentId`
-2. 确认录用后进入 Phase 3
+2. 将人才市场预设人设复制到agent
+3. 确认录用后进入 Phase 3
 
 ### Step 2b: 创建新 Agent
 
@@ -392,8 +393,9 @@ Agent 之间通信存在死循环风险。以下规则写入每个 Agent 的 SOU
       {
         "id": "engineering-senior-developer",
         "name": "bot-engineering-rapid-prototyper",
-        "workspace": "/root/.openclaw/workspace",
-        "agentDir": "/root/.openclaw/workspace/my-lobster/agency-agents/engineering-senior-developer"
+        "workspace": "/root/.openclaw/workspaces/engineering-senior-developer",
+        "agentDir": "/root/.openclaw/agents/engineering-senior-developer/agent"
+
       }
     ]
   },
