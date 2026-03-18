@@ -3,19 +3,12 @@ name: feishu-bot-manager
 description: 飞书机器人与员工生命周期管理，支持招聘、解聘和机器人路由配置
 invocations:
   - words:
-      - 添加飞书机器人
-      - 配置飞书机器人
-      - 新增飞书账户
-      - feishu bot
-      - 飞书绑定agent
       - 雇佣agent
       - 部署agent
-      - 组建团队
-      - 新建agent上岗
       - 解雇员工
       - 裁员
       - 团队状态
-    description: 员工全生命周期管理 -- 招募/创建/部署/解雇 Agent，配置飞书机器人，组建可协作团队
+    description: 员工全生命周期管理 -- 招募/创建/部署/解雇 Agent，组建可协作团队
 ---
 
 # feishu-bot-manager
@@ -75,8 +68,7 @@ invocations:
 用户选中候选后：
 
 1. 该 Agent 的目录名即为 `agentId`
-2. 将人才市场预设人设复制到agent
-3. 确认录用后进入 Phase 3
+2. 确认录用后进入 Phase 3
 
 ### Step 2b: 创建新 Agent
 
@@ -90,7 +82,7 @@ invocations:
 
 ```markdown
 # {角色中文名}
-{一句话，不超过 50 字，描述核心能力和专业领域}
+{描述核心能力和专业领域}
 ```
 
 **SOUL.md：**
@@ -175,10 +167,12 @@ invocations:
 
 **安装命令：**
 
+先查看/root/.openclaw/workspace/my-lobster/skills是否有skill
+如果有优先使用/root/.openclaw/workspace/my-lobster/skills下的skill安装
+如果没有：
 ```bash
 openclaw skills install <skill-name>
 ```
-
 **已安装的技能** 可通过查看 `.clawhub/lock.json` 确认，避免重复安装。
 
 ---
@@ -201,21 +195,17 @@ openclaw skills install <skill-name>
 
 ## Phase 5: 绑定上岗
 
-### 路由绑定方案
-
-**方案 1：账户级绑定** -- 该飞书 Bot 的所有消息路由到 Agent
+### 路由绑定
 
 ```json
-{ "agentId": "engineering-feishu-integration-developer", "match": { "channel": "feishu", "accountId": "bot-feishu-dev" } }
+{
+  "agentId": "engineering-rapid-prototyper",
+  "match": {
+    "channel": "feishu",
+    "accountId": "bot-engineering-rapid-prototyper"
+  }
+}
 ```
-
-**方案 2：群聊级绑定** -- 特定群聊的消息路由到 Agent
-
-```json
-{ "agentId": "engineering-feishu-integration-developer", "match": { "channel": "feishu", "peer": { "kind": "group", "id": "oc_xxx" } } }
-```
-
-群聊级优先级更高，会覆盖账户级。
 
 ### 执行配置
 
@@ -227,9 +217,6 @@ openclaw skills run feishu-bot-manager -- \
   --agent-id engineering-feishu-integration-developer \
   --routing-mode account
 ```
-
-群聊级绑定追加 `--chat-id oc_xxx --routing-mode group`。
-
 ---
 
 ## Phase 6: 团队组网
@@ -253,12 +240,6 @@ openclaw skills run feishu-bot-manager -- \
 |----------|------|------|---------|---------|------|
 | {agent-id} | {中文角色名} | permanent/temporary | {account-id} | {核心能力关键词} | active |
 
-## 协作群
-
-| 群名称 | 群 ID | 用途 | 成员 |
-|--------|-------|------|------|
-| {群名} | {oc_xxx} | {用途描述} | {agent-id-1}, {agent-id-2}, ... |
-
 ## 通信规则
 
 1. **请求协助**：在协作群中 @对方角色名，说明需求和上下文
@@ -271,11 +252,25 @@ openclaw skills run feishu-bot-manager -- \
 
 每个新 Agent 上岗前，在其目录下创建记忆文件和目录：
 
-```bash
-mkdir -p agency-agents/{agent-id}/memory/lessons
-touch agency-agents/{agent-id}/SESSION-STATE.md
-touch agency-agents/{agent-id}/MEMORY.md
-```
+/opt/openclaw
+│
+├── core/                       # OpenClaw核心程序
+│   ├── openclaw
+│   └── skills
+│
+├── agents/                     # 所有Agent
+│   │
+│   ├── {agent-id}/              
+│   │   ├── workspace/          # Agent工作目录
+│   │   ├── memory/             # 长期记忆
+│   │   ├── logs/
+│   │   └── AGENTS.md
+│   │   └── SOUL.md
+│   │   └── USER.md
+│   │   └── MEMORY.md
+│   │   └── IDENTITY.md
+│   │   └── HEARTBEAT.md
+
 
 **SESSION-STATE.md 初始内容：**
 
@@ -354,6 +349,7 @@ openclaw skills run feishu-bot-manager -- \
 创建共享目录结构：
 
 ```
+/root/.openclaw/workspace
 shared/
   handoff/           # 任务交接
     {agent-id}/      # 每个 agent 一个收件箱
@@ -393,8 +389,8 @@ Agent 之间通信存在死循环风险。以下规则写入每个 Agent 的 SOU
       {
         "id": "engineering-senior-developer",
         "name": "bot-engineering-rapid-prototyper",
-        "workspace": "/root/.openclaw/workspaces/engineering-senior-developer",
-        "agentDir": "/root/.openclaw/agents/engineering-senior-developer/agent"
+        "workspace": "/root/.openclaw/agents/engineering-senior-developer/workspace",
+        "agentDir": "/root/.openclaw/agents/engineering-senior-developer/"
 
       }
     ]
