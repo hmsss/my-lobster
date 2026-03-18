@@ -1,0 +1,23 @@
+{
+  "agents": {
+    "product-manager": {
+      "status": "idle",
+      "currentTask": null,
+      "startedAt": null,
+      "lastCheckAt": null
+    },
+    "engineering-full-stack-developer": {
+      "status": "working",
+      "currentTask": "dialect-music-player-dev",
+      "startedAt": "2026-03-19T02:05:00+08:00",
+      "lastCheckAt": "2026-03-19T02:22:00+08:00"
+    },
+    "testing-senior-qa-engineer": {
+      "status": "idle",
+      "currentTask": null,
+      "startedAt": null,
+      "lastCheckAt": null
+    }
+  },
+  "lastUpdated": "2026-03-19T02:22:00+08:00"
+}

@@ -29,6 +29,33 @@
 3. **进度同步到 progress.md**：每次检查后更新 `CEO/progress.md` 状态
 4. **不要重复分配已完成任务**：分配前先检查是否已有产出
 
+### 任务状态机 (2026-03-19 新增)
+**问题**：重复分配任务导致员工忙不过来
+
+**解决方案**：维护 `memory/task-state.json` 跟踪每个员工状态
+
+**状态定义**：
+- `idle` - 空闲，可以分配任务
+- `working` - 工作中，**不要重复分配！**
+- `completed` - 已完成，等待检查
+- `blocked` - 阻塞，需要人工介入
+
+**分配任务前必须检查**：
+1. 读取 `memory/task-state.json`
+2. 检查目标 Agent 的 status
+3. 如果 `status === "working"` → **停止！不要分配！**
+4. 如果 `status === "idle"` → 分配任务，更新状态为 "working"
+5. 任务完成 → 更新状态为 "completed"
+
+**状态检查命令**：
+```bash
+# 检查 Agent 最后活动时间
+stat /root/.openclaw/agents/{agent-id}/sessions/*.jsonl | grep Modify
+
+# 如果最后活动时间 < 5分钟前，说明正在工作
+# 如果最后活动时间 > 10分钟无更新，检查是否完成或卡住
+```
+
 **检查清单**：
 ```bash
 # 下派任务后，每隔几分钟检查一次
