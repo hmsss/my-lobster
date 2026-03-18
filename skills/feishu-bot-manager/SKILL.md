@@ -522,7 +522,7 @@ openclaw skills run feishu-bot-manager -- [options]
 - **自动备份**：修改前自动备份 openclaw.json 到 `~/.openclaw/backups/`
 - **dmScope**：自动设置为 `per-account-channel-peer`
 - **重启 Gateway**：配置写入后自动重启，约 10-30 秒恢复
-- **修改配置文件时**：不要操作main相关的配置
+- **修改agnets配置文件时**：注意要保证list中包含main的配置{ "id": "main",  "default": true,  "name": "CEO总指挥官", "workspace": "/root/.openclaw/workspace"},
 - **恢复**：如出问题可从备份恢复
 
 ---
