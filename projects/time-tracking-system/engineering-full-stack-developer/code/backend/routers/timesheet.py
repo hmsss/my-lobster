@@ -1,5 +1,6 @@
 """工时相关API路由"""
 from fastapi import APIRouter, Query, Depends
+from datetime import datetime, timedelta
 from database import get_db
 from schemas import ApiResponse
 from auth import get_current_user, get_current_admin_user
@@ -43,7 +44,19 @@ async def create_timesheet(
         if not project:
             return ApiResponse(code=2001, message="项目不存在或已归档")
         
-        # 检查日期范围（简化校验，实际应检查是否在过去N天内）
+        # 日期校验：禁止未来日期 + 禁止超过7天前
+        try:
+            work_date_obj = datetime.strptime(work_date, "%Y-%m-%d").date()
+            today = datetime.now().date()
+            min_allowed_date = today - timedelta(days=ALLOWED_DATE_RANGE_DAYS)
+            
+            if work_date_obj > today:
+                return ApiResponse(code=2002, message="不能提交未来日期的工时")
+            
+            if work_date_obj < min_allowed_date:
+                return ApiResponse(code=2002, message=f"只能提交{ALLOWED_DATE_RANGE_DAYS}天内的工时")
+        except ValueError:
+            return ApiResponse(code=1001, message="日期格式错误，请使用 YYYY-MM-DD 格式")
         
         # 保存工时记录
         cursor = conn.execute("""
@@ -220,6 +233,20 @@ async def update_timesheet(
         
         if not project:
             return ApiResponse(code=2001, message="项目不存在或已归档")
+        
+        # 日期校验：禁止未来日期 + 禁止超过7天前
+        try:
+            work_date_obj = datetime.strptime(work_date, "%Y-%m-%d").date()
+            today = datetime.now().date()
+            min_allowed_date = today - timedelta(days=ALLOWED_DATE_RANGE_DAYS)
+            
+            if work_date_obj > today:
+                return ApiResponse(code=2002, message="不能提交未来日期的工时")
+            
+            if work_date_obj < min_allowed_date:
+                return ApiResponse(code=2002, message=f"只能提交{ALLOWED_DATE_RANGE_DAYS}天内的工时")
+        except ValueError:
+            return ApiResponse(code=1001, message="日期格式错误，请使用 YYYY-MM-DD 格式")
         
         # 更新记录
         conn.execute("""

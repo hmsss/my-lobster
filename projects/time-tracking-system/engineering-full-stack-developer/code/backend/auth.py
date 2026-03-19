@@ -3,7 +3,7 @@ import jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from config import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRE_HOURS
+from config import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRATION_HOURS as JWT_EXPIRE_HOURS
 from database import get_db
 
 security = HTTPBearer()

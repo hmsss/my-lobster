@@ -129,7 +129,12 @@ export default function TimeEntry() {
               <DatePicker 
                 size="large" 
                 style={{ width: '100%' }}
-                disabledDate={(current) => current && current > dayjs().endOf('day')}
+                disabledDate={(current) => {
+                  if (!current) return false
+                  const today = dayjs().endOf('day')
+                  const minDate = dayjs().subtract(7, 'day').startOf('day')
+                  return current > today || current < minDate
+                }}
               />
             </Form.Item>
           </div>
