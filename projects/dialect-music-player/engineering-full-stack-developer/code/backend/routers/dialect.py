@@ -63,46 +63,6 @@ async def get_dialect_list(
         ))
 
 
-@router.get("/{dialect_id}", response_model=ApiResponse)
-async def get_dialect_detail(dialect_id: str):
-    """获取方言详情"""
-    with get_db() as conn:
-        row = conn.execute("""
-            SELECT d.id, d.city_id, d.name, d.description, d.duration,
-                   d.file_path, d.file_size, d.created_at,
-                   c.name as city_name, p.name as province_name
-            FROM dialects d
-            JOIN cities c ON d.city_id = c.id
-            JOIN provinces p ON c.province_id = p.id
-            WHERE d.id = ?
-        """, (dialect_id,)).fetchone()
-        
-        if not row:
-            return ApiResponse(code=1201, message="方言不存在")
-        
-        from utils import format_duration, format_file_size
-        
-        data = Dialect(
-            id=row["id"],
-            cityId=row["city_id"],
-            cityName=row["city_name"],
-            name=row["name"],
-            description=row["description"],
-            duration=row["duration"],
-            durationText=format_duration(row["duration"]),
-            audioUrl=f"/audio/dialect/{row['file_path']}",
-            fileSize=row["file_size"],
-            fileSizeText=format_file_size(row["file_size"]),
-            createdAt=row["created_at"]
-        )
-        
-        # 添加省份名称（扩展字段）
-        data_dict = data.model_dump()
-        data_dict["provinceName"] = row["province_name"]
-        
-        return ApiResponse(data=data_dict)
-
-
 @router.get("/search", response_model=ApiResponse)
 async def search_dialects(
     keyword: str = Query(..., description="搜索关键词"),
@@ -151,6 +111,44 @@ async def search_dialects(
             "pageSize": page_size,
             "items": items
         })
+
+
+@router.get("/{dialect_id}", response_model=ApiResponse)
+async def get_dialect_detail(dialect_id: str):
+    """获取方言详情"""
+    with get_db() as conn:
+        row = conn.execute("""
+            SELECT d.id, d.city_id, d.name, d.description, d.duration,
+                   d.file_path, d.file_size, d.created_at,
+                   c.name as city_name, p.name as province_name
+            FROM dialects d
+            JOIN cities c ON d.city_id = c.id
+            JOIN provinces p ON c.province_id = p.id
+            WHERE d.id = ?
+        """, (dialect_id,)).fetchone()
+        
+        if not row:
+            return ApiResponse(code=1201, message="方言不存在")
+        
+        data = Dialect(
+            id=row["id"],
+            cityId=row["city_id"],
+            cityName=row["city_name"],
+            name=row["name"],
+            description=row["description"],
+            duration=row["duration"],
+            durationText=format_duration(row["duration"]),
+            audioUrl=f"/audio/dialect/{row['file_path']}",
+            fileSize=row["file_size"],
+            fileSizeText=format_file_size(row["file_size"]),
+            createdAt=row["created_at"]
+        )
+        
+        # 添加省份名称（扩展字段）
+        data_dict = data.model_dump()
+        data_dict["provinceName"] = row["province_name"]
+        
+        return ApiResponse(data=data_dict)
 
 
 # 导入工具函数

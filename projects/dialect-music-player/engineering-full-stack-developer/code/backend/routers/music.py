@@ -1,9 +1,7 @@
 """音乐相关API路由"""
 import os
-import uuid
-from fastapi import APIRouter, Query, UploadFile, File, Form, HTTPException
-from fastapi.responses import FileResponse
-from database import get_db
+from fastapi import APIRouter, Query, UploadFile, File, Form
+ from database import get_db
 from schemas import ApiResponse, Music, MusicListResponse, MusicUpdate
 from config import MUSIC_DIR, MAX_FILE_SIZE, ALLOWED_EXTENSIONS
 from utils import format_duration, format_file_size, generate_id, is_allowed_audio_type
@@ -19,12 +17,12 @@ async def upload_music(
     """上传音乐文件"""
     # 检查文件类型
     if not is_allowed_audio_type(file.filename):
-        return ApiResponse(code=2001, message="文件格式不支持，仅支持 mp3, wav, ogg, m4a")
+        return ApiResponse(code=2001, message="文件格式不支持， 仅支持 mp3, wav, ogg, m4a")
     
     # 检查文件大小
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
-        return ApiResponse(code=2002, message=f"文件大小超过限制（最大 {MAX_FILE_SIZE // (1024*1024)}MB）")
+        return ApiResponse(code=2002, message=f"文件大小超过限制（最大 {MAX_FILE_SIZE // (1024*1024)}MB)")
     
     # 生成文件名和保存路径
     file_ext = file.filename.rsplit(".", 1)[-1].lower()
@@ -42,13 +40,12 @@ async def upload_music(
     # 获取歌曲名称
     song_name = name or os.path.splitext(file.filename)[0]
     
-    # 写入数据库（暂时使用默认时长，实际项目可用 mutagen 解析音频元数据）
     file_size = len(content)
     
     with get_db() as conn:
         conn.execute("""
             INSERT INTO musics (id, name, duration, file_path, file_size, file_type)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (music_id, song_name, 0, filename, file_size, file_ext))
     
     return ApiResponse(
@@ -78,15 +75,12 @@ async def get_music_list(
 ):
     """获取音乐列表"""
     with get_db() as conn:
-        # 验证排序字段
         valid_sort_fields = {"upload_time": "upload_time", "name": "name", "duration": "duration"}
         sort_field = valid_sort_fields.get(sort_by, "upload_time")
         order_direction = "DESC" if order == "desc" else "ASC"
         
-        # 获取总数
         total = conn.execute("SELECT COUNT(*) as count FROM musics").fetchone()["count"]
         
-        # 分页查询
         offset = (page - 1) * page_size
         rows = conn.execute(f"""
             SELECT id, name, artist, album, duration, file_path, file_size, file_type, upload_time
@@ -118,6 +112,48 @@ async def get_music_list(
             pageSize=page_size,
             items=items
         ))
+
+
+@router.get("/search", response_model=ApiResponse)
+async def search_music(
+    keyword: str = Query(..., description="搜索关键词"),
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=50, description="每页数量")
+):
+    """搜索音乐"""
+    with get_db() as conn:
+        search_pattern = f"%{keyword}%"
+        
+        total = conn.execute("""
+            SELECT COUNT(*) as count FROM musics
+            WHERE name LIKE ? OR artist LIKE ?
+        """, (search_pattern, search_pattern)).fetchone()["count"]
+        
+        offset = (page - 1) * page_size
+        rows = conn.execute("""
+            SELECT id, name, artist, album, duration, file_path
+            FROM musics
+            WHERE name LIKE ? OR artist LIKE ?
+            ORDER BY upload_time DESC
+            LIMIT ? OFFSET ?
+        """, (search_pattern, search_pattern, page_size, offset)).fetchall()
+        
+        items = [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "artist": row["artist"],
+                "album": row["album"],
+                "duration": row["duration"],
+                "audioUrl": f"/audio/music/{row['file_path']}"
+            }
+            for row in rows
+        ]
+        
+        return ApiResponse(data={
+            "total": total,
+            "items": items
+        })
 
 
 @router.get("/{music_id}", response_model=ApiResponse)
@@ -152,14 +188,12 @@ async def get_music_detail(music_id: str):
 async def update_music(music_id: str, update_data: MusicUpdate):
     """更新音乐信息"""
     with get_db() as conn:
-        # 检查音乐是否存在
         existing = conn.execute(
             "SELECT id FROM musics WHERE id = ?", (music_id,)
         ).fetchone()
         if not existing:
             return ApiResponse(code=2004, message="音乐不存在")
         
-        # 构建更新语句
         updates = []
         params = []
         if update_data.name is not None:
@@ -175,11 +209,10 @@ async def update_music(music_id: str, update_data: MusicUpdate):
         if updates:
             params.append(music_id)
             conn.execute(
-                f"UPDATE musics SET {', '.join(updates)} WHERE id = ?",
+                f"UPDATE musics SET {', '.join(updates)} where id = ?",
                 params
             )
         
-        # 返回更新后的数据
         row = conn.execute("""
             SELECT id, name, artist, album FROM musics WHERE id = ?
         """, (music_id,)).fetchone()
@@ -199,7 +232,6 @@ async def update_music(music_id: str, update_data: MusicUpdate):
 async def delete_music(music_id: str):
     """删除音乐"""
     with get_db() as conn:
-        # 获取文件路径
         row = conn.execute(
             "SELECT file_path FROM musics WHERE id = ?", (music_id,)
         ).fetchone()
@@ -209,10 +241,8 @@ async def delete_music(music_id: str):
         
         file_path = os.path.join(MUSIC_DIR, row["file_path"])
         
-        # 删除数据库记录
         conn.execute("DELETE FROM musics WHERE id = ?", (music_id,))
         
-        # 删除文件
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -220,47 +250,3 @@ async def delete_music(music_id: str):
             return ApiResponse(code=2005, message=f"删除文件失败: {str(e)}")
         
         return ApiResponse(message="删除成功")
-
-
-@router.get("/search", response_model=ApiResponse)
-async def search_music(
-    keyword: str = Query(..., description="搜索关键词"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=50, description="每页数量")
-):
-    """搜索音乐"""
-    with get_db() as conn:
-        search_pattern = f"%{keyword}%"
-        
-        # 获取总数
-        total = conn.execute("""
-            SELECT COUNT(*) as count FROM musics
-            WHERE name LIKE ? OR artist LIKE ?
-        """, (search_pattern, search_pattern)).fetchone()["count"]
-        
-        # 分页查询
-        offset = (page - 1) * page_size
-        rows = conn.execute("""
-            SELECT id, name, artist, album, duration, file_path
-            FROM musics
-            WHERE name LIKE ? OR artist LIKE ?
-            ORDER BY upload_time DESC
-            LIMIT ? OFFSET ?
-        """, (search_pattern, search_pattern, page_size, offset)).fetchall()
-        
-        items = [
-            {
-                "id": row["id"],
-                "name": row["name"],
-                "artist": row["artist"],
-                "album": row["album"],
-                "duration": row["duration"],
-                "audioUrl": f"/audio/music/{row['file_path']}"
-            }
-            for row in rows
-        ]
-        
-        return ApiResponse(data={
-            "total": total,
-            "items": items
-        })
