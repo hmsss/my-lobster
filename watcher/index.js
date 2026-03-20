@@ -435,7 +435,7 @@ function processSessionLine(agentId, line) {
       // 新任务开始
       if (shouldProcessAgent(agentId)) {
         const agentName = AGENT_NAMES[agentId] || agentId;
-        sendFeishuMessage(agentId, `[${agentName}] 开始处理新任务`);
+        sendFeishuMessage(agentId, `开始处理新任务`);
       }
     }
 
@@ -452,7 +452,7 @@ function processSessionLine(agentId, line) {
     if (isComplete) {
       if (shouldProcessAgent(agentId)) {
         const agentName = AGENT_NAMES[agentId] || agentId;
-        sendFeishuMessage(agentId, `[${agentName}] 任务完成`);
+        sendFeishuMessage(agentId, `任务完成`);
       }
       agentLastActivity.delete(agentId);
       return;
@@ -469,7 +469,7 @@ function processSessionLine(agentId, line) {
       summary = summary.substring(0, 100) + '...';
     }
 
-    sendFeishuMessage(agentId, `[${agentName}] ${summary}`);
+    sendFeishuMessage(agentId, `${summary}`);
     throttleState.set(agentId, Date.now());
 
   } catch (e) {
