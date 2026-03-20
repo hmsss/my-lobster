@@ -19,7 +19,7 @@ const DEFAULT_CONFIG = {
   agentsRootDir: DEFAULT_AGENTS_ROOT_DIR,
   agents: {
     include: [],
-    exclude: ['main']
+    exclude: []
   },
   agentTargets: {}
 };
