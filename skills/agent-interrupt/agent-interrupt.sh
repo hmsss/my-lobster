@@ -162,6 +162,77 @@ show_status() {
     echo ""
 }
 
+# 显示所有员工详细工作状态
+show_all_status() {
+    echo ""
+    echo "========================================"
+    echo "  📊 员工工作状态总览"
+    echo "========================================"
+    echo ""
+    
+    if [[ ! -f "$TASK_STATE" ]]; then
+        echo "❌ 状态文件不存在: $TASK_STATE"
+        return 1
+    fi
+    
+    # 定义所有员工（包括 CEO）
+    local all_agents=("main" "product-manager" "engineering-full-stack-developer" "testing-senior-qa-engineer")
+    
+    for agent_id in "${all_agents[@]}"; do
+        local agent_name=$(get_agent_name "$agent_id")
+        local status=$(jq -r ".agents.\"$agent_id\".status // \"unknown\"" "$TASK_STATE" 2>/dev/null)
+        local task=$(jq -r ".agents.\"$agent_id\".currentTask // \"无任务\"" "$TASK_STATE" 2>/dev/null)
+        local progress=$(jq -r ".agents.\"$agent_id\".progress // \"-\"" "$TASK_STATE" 2>/dev/null)
+        local started=$(jq -r ".agents.\"$agent_id\".startedAt // \"-\"" "$TASK_STATE" 2>/dev/null)
+        local last_check=$(jq -r ".agents.\"$agent_id\".lastCheckAt // \"-\"" "$TASK_STATE" 2>/dev/null)
+        
+        # 状态颜色
+        local status_icon status_color
+        case "$status" in
+            "working")
+                status_icon="🔄"
+                status_color="${YELLOW}"
+                ;;
+            "idle")
+                status_icon="💤"
+                status_color="${GREEN}"
+                ;;
+            "completed")
+                status_icon="✅"
+                status_color="${GREEN}"
+                ;;
+            "blocked")
+                status_icon="🚫"
+                status_color="${RED}"
+                ;;
+            *)
+                status_icon="❓"
+                status_color="${NC}"
+                ;;
+        esac
+        
+        echo -e "${status_color}${status_icon} ${agent_name}${NC}"
+        echo "   状态: $status"
+        echo "   任务: $task"
+        if [[ "$status" == "working" ]]; then
+            echo "   进度: $progress"
+            echo "   开始: $started"
+            echo "   最后检查: $last_check"
+        fi
+        echo ""
+    done
+    
+    # 统计
+    local working_count=$(jq '[.agents | to_entries[] | select(.value.status == "working")] | length' "$TASK_STATE" 2>/dev/null)
+    local idle_count=$(jq '[.agents | to_entries[] | select(.value.status == "idle")] | length' "$TASK_STATE" 2>/dev/null)
+    local completed_count=$(jq '[.agents | to_entries[] | select(.value.status == "completed")] | length' "$TASK_STATE" 2>/dev/null)
+    
+    echo "----------------------------------------"
+    echo "📈 统计: 🔄工作中=$working_count | 💤空闲=$idle_count | ✅完成=$completed_count"
+    echo "========================================"
+    echo ""
+}
+
 # 主函数
 main() {
     local arg="${1:-}"
@@ -173,12 +244,16 @@ main() {
         -status|status)
             show_status
             ;;
+        -ai|ai|--all-status)
+            show_all_status
+            ;;
         -h|--help|help)
             echo "用法："
             echo "  agent-interrupt.sh          # 中断当前正在运行的 Agent"
             echo "  agent-interrupt.sh -all     # 中断所有正在运行的 Agent"
             echo "  agent-interrupt.sh <id>     # 中断指定的 Agent"
-            echo "  agent-interrupt.sh -status  # 查看状态"
+            echo "  agent-interrupt.sh -status  # 查看状态（简洁）"
+            echo "  agent-interrupt.sh -ai      # 查看所有员工详细工作状态"
             ;;
         "")
             # 中断当前正在运行的 Agent
