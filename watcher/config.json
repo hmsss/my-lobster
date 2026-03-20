@@ -1,5 +1,22 @@
 {
   "enabled": true,
   "throttleMs": 5000,
-  "agentTargets": {}
+  "agentTargets": {
+    "main": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    },
+    "product-manager": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    },
+    "engineering-full-stack-developer": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    },
+    "testing-senior-qa-engineer": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    }
+  }
 }
