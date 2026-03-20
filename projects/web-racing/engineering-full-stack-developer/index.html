@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏎️ 赛车</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #ff4444;
+            text-shadow: 0 0 20px rgba(255,68,68,0.5);
+        }
+        #gameCanvas {
+            border: 3px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 0 40px rgba(255,68,68,0.2);
+        }
+        .hud {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .hud-item { color: #aaa; }
+        .hud-item span { color: #4ecdc4; font-weight: bold; font-size: 1.3rem; }
+        .speed-gauge {
+            width: 200px;
+            height: 100px;
+            margin: 10px auto;
+            position: relative;
+        }
+        .speed-gauge-bg {
+            width: 200px;
+            height: 100px;
+            background: linear-gradient(to bottom, #1a1a1a, #0a0a0a);
+            border-radius: 100px 100px 0 0;
+            border: 3px solid #333;
+            border-bottom: none;
+            overflow: hidden;
+            position: relative;
+        }
+        .speed-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, #ff4444, #ff8800);
+            border-radius: 100px 100px 0 0;
+            transition: height 0.1s;
+        }
+        .speed-text {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255,68,68,0.8);
+        }
+        .speed-label {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        .controls {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+        .controls kbd {
+            background: #222;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 0 2px;
+            border: 1px solid #444;
+        }
+        .menu-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .menu-title {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+        .menu-subtitle {
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+        .menu-btn {
+            padding: 18px 60px;
+            margin: 8px;
+            border: none;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .menu-btn.start { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; }
+        .menu-btn:hover { transform: scale(1.05); box-shadow: 0 5px 30px rgba(255,68,68,0.4); }
+        .best-time {
+            margin-top: 30px;
+            color: #4ecdc4;
+            font-size: 1.2rem;
+        }
+        .countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem;
+            font-weight: bold;
+            color: #ff4444;
+            text-shadow: 0 0 60px rgba(255,68,68,0.8);
+            z-index: 50;
+            animation: pulse 0.5s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
+        .lap-flash {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4ecdc4;
+            text-shadow: 0 0 30px rgba(78,205,196,0.8);
+            z-index: 50;
+            animation: flashIn 1.5s ease-out forwards;
+        }
+        @keyframes flashIn {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.5); }
+            20% { opacity: 1; transform: translateX(-50%) scale(1.1); }
+            80% { opacity: 1; transform: translateX(-50%) scale(1); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>🏎️ 赛车</h1>
+    
+    <div class="hud">
+        <div class="hud-item">圈数: <span id="lap">0</span>/3</div>
+        <div class="hud-item">时间: <span id="time">0:00.00</span></div>
+        <div class="hud-item">圈速: <span id="lapTime">--:--</span></div>
+        <div class="hud-item">最快: <span id="bestTime" style="color:#ff8800;">--:--</span></div>
+    </div>
+
+    <canvas id="gameCanvas" width="900" height="650"></canvas>
+
+    <div class="speed-gauge">
+        <div class="speed-gauge-bg">
+            <div class="speed-fill" id="speedFill"></div>
+            <div class="speed-text"><span id="speedNum">0</span> km/h</div>
+        </div>
+        <div class="speed-label">SPEED</div>
+    </div>
+
+    <div class="controls">
+        <kbd>↑</kbd><kbd>W</kbd> 加速 | <kbd>↓</kbd><kbd>S</kbd> 刹车 | <kbd>←</kbd><kbd>→</kbd><kbd>A</kbd><kbd>D</kbd> 转向 | <kbd>Space</kbd> 手刹
+    </div>
+
+    <!-- Main Menu -->
+    <div id="mainMenu" class="menu-overlay">
+        <div class="menu-title">🏎️ 赛车</div>
+        <div class="menu-subtitle">在赛道上追逐最快圈速</div>
+        <button class="menu-btn start" onclick="startGame()">开始比赛</button>
+        <div class="best-time" id="menuBestTime"></div>
+    </div>
+
+    <!-- Countdown -->
+    <div id="countdown" class="countdown hidden">3</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // Game state
+        let gameState = 'menu'; // menu, countdown, racing, finished
+        let car, lapTimes, currentLap, raceStartTime, lapStartTime;
+        let bestLapTime = localStorage.getItem('racing-best') ? parseFloat(localStorage.getItem('racing-best')) : null;
+        let keys = {};
+        let tireTracks = [];
+        let speedLines = [];
+
+        // Track - oval with curves
+        const track = {
+            cx: W / 2,
+            cy: H / 2,
+            outerRx: 380,
+            outerRy: 270,
+            innerRx: 220,
+            innerRy: 110,
+            startX: W / 2,
+            startY: H / 2 + 190,
+            startAngle: -Math.PI / 2
+        };
+
+        // Checkpoints (for lap counting)
+        const checkpoints = [
+            { angle: Math.PI / 2, passed: false },   // bottom
+            { angle: Math.PI, passed: false },       // left
+            { angle: -Math.PI / 2, passed: false }   // top
+        ];
+
+        class Car {
+            constructor() {
+                this.x = track.startX;
+                this.y = track.startY;
+                this.angle = track.startAngle;
+                this.speed = 0;
+                this.maxSpeed = 12;
+                this.acceleration = 0.15;
+                this.braking = 0.25;
+                this.friction = 0.02;
+                this.turnSpeed = 0.05;
+                this.width = 24;
+                this.height = 40;
+                this.drift = 0;
+            }
+
+            update() {
+                // Acceleration / Braking
+                if (keys['ArrowUp'] || keys['KeyW']) {
+                    this.speed += this.acceleration;
+                } else if (keys['ArrowDown'] || keys['KeyS']) {
+                    this.speed -= this.braking;
+                } else {
+                    // Natural friction
+                    this.speed *= (1 - this.friction);
+                }
+
+                // Handbrake
+                if (keys['Space']) {
+                    this.speed *= 0.95;
+                    this.drift = 0.3;
+                } else {
+                    this.drift *= 0.9;
+                }
+
+                // Clamp speed
+                this.speed = Math.max(-3, Math.min(this.maxSpeed, this.speed));
+
+                // Steering (only when moving)
+                const turnFactor = Math.min(1, Math.abs(this.speed) / 3);
+                if (keys['ArrowLeft'] || keys['KeyA']) {
+                    this.angle -= this.turnSpeed * turnFactor * (this.speed > 0 ? 1 : -1);
+                }
+                if (keys['ArrowRight'] || keys['KeyD']) {
+                    this.angle += this.turnSpeed * turnFactor * (this.speed > 0 ? 1 : -1);
+                }
+
+                // Move
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                // Tire tracks when drifting or braking hard
+                if (Math.abs(this.drift) > 0.1 || (Math.abs(this.speed) > 5 && keys['Space'])) {
+                    tireTracks.push({
+                        x: this.x - Math.cos(this.angle) * 15,
+                        y: this.y - Math.sin(this.angle) * 15,
+                        angle: this.angle,
+                        alpha: 0.4
+                    });
+                }
+
+                // Speed lines at high speed
+                if (this.speed > 8 && Math.random() > 0.5) {
+                    speedLines.push({
+                        x: this.x + (Math.random() - 0.5) * 200,
+                        y: this.y + (Math.random() - 0.5) * 200,
+                        length: 20 + Math.random() * 30,
+                        alpha: 0.6
+                    });
+                }
+
+                // Boundary collision
+                this.checkBoundary();
+
+                // Update UI
+                document.getElementById('speedFill').style.height = (Math.abs(this.speed) / this.maxSpeed * 100) + '%';
+                document.getElementById('speedNum').textContent = Math.floor(Math.abs(this.speed) * 20);
+            }
+
+            checkBoundary() {
+                // Simple oval track boundary check
+                const dx = this.x - track.cx;
+                const dy = this.y - track.cy;
+
+                // Normalize to ellipse space
+                const outerDist = (dx * dx) / (track.outerRx * track.outerRx) + (dy * dy) / (track.outerRy * track.outerRy);
+                const innerDist = (dx * dx) / (track.innerRx * track.innerRx) + (dy * dy) / (track.innerRy * track.innerRy);
+
+                // Outside outer boundary
+                if (outerDist > 1) {
+                    const angle = Math.atan2(dy, dx);
+                    this.x = track.cx + Math.cos(angle) * track.outerRx * 0.97;
+                    this.y = track.cy + Math.sin(angle) * track.outerRy * 0.97;
+                    this.speed *= 0.5;
+                }
+
+                // Inside inner boundary
+                if (innerDist < 1) {
+                    const angle = Math.atan2(dy, dx);
+                    this.x = track.cx + Math.cos(angle) * track.innerRx * 1.1;
+                    this.y = track.cy + Math.sin(angle) * track.innerRy * 1.1;
+                    this.speed *= 0.5;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle + Math.PI / 2);
+
+                // Car shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(-this.width/2 + 3, -this.height/2 + 3, this.width, this.height);
+
+                // Car body
+                const gradient = ctx.createLinearGradient(0, -this.height/2, 0, this.height/2);
+                gradient.addColorStop(0, '#ff4444');
+                gradient.addColorStop(1, '#cc0000');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+
+                // Windshield
+                ctx.fillStyle = '#87ceeb';
+                ctx.fillRect(-this.width/2 + 4, -this.height/4, this.width - 8, this.height/4);
+
+                // Cockpit
+                ctx.fillStyle = '#222';
+                ctx.fillRect(-6, -this.height/6, 12, this.height/3);
+
+                // Rear wing
+                ctx.fillStyle = '#333';
+                ctx.fillRect(-this.width/2 - 4, this.height/2 - 8, 4, 10);
+                ctx.fillRect(this.width/2, this.height/2 - 8, 4, 10);
+
+                // Front bumper
+                ctx.fillStyle = '#ff6666';
+                ctx.fillRect(-this.width/2 + 2, -this.height/2, this.width - 4, 4);
+
+                ctx.restore();
+            }
+        }
+
+        function drawTrack() {
+            // Grass background
+            ctx.fillStyle = '#1a472a';
+            ctx.fillRect(0, 0, W, H);
+
+            // Grass texture
+            ctx.fillStyle = '#1e5631';
+            for (let i = 0; i < 200; i++) {
+                const x = Math.random() * W;
+                const y = Math.random() * H;
+                ctx.fillRect(x, y, 2, 6);
+            }
+
+            // Track outer edge
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.ellipse(track.cx, track.cy, track.outerRx, track.outerRy, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Track surface
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = track.outerRx - track.innerRx;
+            ctx.beginPath();
+            ctx.ellipse(track.cx, track.cy, (track.outerRx + track.innerRx) / 2, (track.outerRy + track.innerRy) / 2, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Inner edge
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.ellipse(track.cx, track.cy, track.innerRx, track.innerRy, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Racing line (dashed)
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.ellipse(track.cx, track.cy, (track.outerRx + track.innerRx) / 2, (track.outerRy + track.innerRy) / 2, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Start/finish line
+            ctx.fillStyle = '#fff';
+            const sx = track.cx;
+            const sy = track.startY;
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 2; j++) {
+                    if ((i + j) % 2 === 0) {
+                        ctx.fillRect(sx - 60 + i * 12, sy - 10 + j * 10, 12, 10);
+                    }
+                }
+            }
+
+            // Start position marker
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(track.startX - 3, track.startY - 25, 6, 15);
+        }
+
+        function drawTireTracks() {
+            tireTracks = tireTracks.filter(t => t.alpha > 0.02);
+            for (let t of tireTracks) {
+                ctx.save();
+                ctx.globalAlpha = t.alpha;
+                ctx.translate(t.x, t.y);
+                ctx.rotate(t.angle);
+                ctx.fillStyle = '#222';
+                ctx.fillRect(-2, -8, 4, 16);
+                ctx.restore();
+                t.alpha *= 0.995;
+            }
+        }
+
+        function drawSpeedLines() {
+            speedLines = speedLines.filter(l => l.alpha > 0.02);
+            for (let l of speedLines) {
+                ctx.save();
+                ctx.globalAlpha = l.alpha;
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(l.x - l.length / 2, l.y);
+                ctx.lineTo(l.x + l.length / 2, l.y);
+                ctx.stroke();
+                ctx.restore();
+                l.alpha *= 0.9;
+            }
+        }
+
+        function checkLap() {
+            const dx = car.x - track.cx;
+            const dy = car.y - track.cy;
+            const carAngle = Math.atan2(dy, dx);
+
+            // Checkpoints
+            checkpoints.forEach((cp, i) => {
+                const diff = Math.abs(normalizeAngle(carAngle - cp.angle));
+                if (diff < 0.3 && !cp.passed) {
+                    cp.passed = true;
+                }
+            });
+
+            // Lap complete - crossed start line going the right direction
+            const atStart = Math.abs(car.x - track.startX) < 30 && Math.abs(car.y - track.startY) < 30;
+            const allPassed = checkpoints.every(cp => cp.passed);
+
+            if (atStart && allPassed && car.speed > 0) {
+                completeLap();
+            }
+        }
+
+        function normalizeAngle(a) {
+            while (a > Math.PI) a -= Math.PI * 2;
+            while (a < -Math.PI) a += Math.PI * 2;
+            return a;
+        }
+
+        function completeLap() {
+            const now = Date.now();
+            const lapTime = (now - lapStartTime) / 1000;
+            lapTimes.push(lapTime);
+
+            // Flash lap time
+            showLapFlash(lapTime);
+
+            // Check best
+            if (bestLapTime === null || lapTime < bestLapTime) {
+                bestLapTime = lapTime;
+                localStorage.setItem('racing-best', bestLapTime);
+                document.getElementById('bestTime').style.color = '#ff4444';
+            }
+            document.getElementById('bestTime').textContent = formatTime(bestLapTime);
+
+            // Reset
+            currentLap++;
+            document.getElementById('lap').textContent = currentLap;
+            checkpoints.forEach(cp => cp.passed = false);
+            lapStartTime = now;
+
+            // Win?
+            if (currentLap >= 3) {
+                gameFinished();
+            }
+        }
+
+        function showLapFlash(time) {
+            const el = document.createElement('div');
+            el.className = 'lap-flash';
+            el.textContent = `圈速: ${formatTime(time)}`;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        }
+
+        function gameFinished() {
+            gameState = 'finished';
+            const total = (Date.now() - raceStartTime) / 1000;
+            setTimeout(() => {
+                alert(`🏁 比赛结束！\n\n总时间: ${formatTime(total)}\n最快圈: ${formatTime(bestLapTime)}\n\n按确定返回菜单`);
+                showMenu();
+            }, 500);
+        }
+
+        function formatTime(seconds) {
+            if (seconds === null || isNaN(seconds)) return '--:--';
+            const m = Math.floor(seconds / 60);
+            const s = (seconds % 60).toFixed(2);
+            return `${m}:${s.padStart(5, '0')}`;
+        }
+
+        function updateTimer() {
+            if (gameState !== 'racing') return;
+            const elapsed = (Date.now() - raceStartTime) / 1000;
+            document.getElementById('time').textContent = formatTime(elapsed);
+
+            if (lapTimes.length > 0) {
+                const lastLap = lapTimes[lapTimes.length - 1];
+                document.getElementById('lapTime').textContent = formatTime(lastLap);
+            }
+        }
+
+        function gameLoop() {
+            if (gameState === 'racing') {
+                car.update();
+                checkLap();
+                updateTimer();
+            }
+
+            // Draw
+            drawTrack();
+            drawTireTracks();
+            drawSpeedLines();
+            if (car) car.draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startCountdown() {
+            gameState = 'countdown';
+            document.getElementById('mainMenu').classList.add('hidden');
+            const countdownEl = document.getElementById('countdown');
+            countdownEl.classList.remove('hidden');
+
+            let count = 3;
+            countdownEl.textContent = count;
+
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownEl.textContent = count;
+                    countdownEl.style.animation = 'none';
+                    countdownEl.offsetHeight; // Trigger reflow
+                    countdownEl.style.animation = 'pulse 0.5s ease-in-out';
+                } else if (count === 0) {
+                    countdownEl.textContent = 'GO!';
+                    countdownEl.style.color = '#4ecdc4';
+                    countdownEl.style.animation = 'none';
+                    countdownEl.offsetHeight;
+                    countdownEl.style.animation = 'pulse 0.5s ease-in-out';
+                } else {
+                    clearInterval(interval);
+                    countdownEl.classList.add('hidden');
+                    countdownEl.style.color = '#ff4444';
+                    startRace();
+                }
+            }, 1000);
+        }
+
+        function startRace() {
+            gameState = 'racing';
+            car = new Car();
+            lapTimes = [];
+            currentLap = 0;
+            raceStartTime = Date.now();
+            lapStartTime = Date.now();
+            checkpoints.forEach(cp => cp.passed = false);
+            tireTracks = [];
+            speedLines = [];
+            document.getElementById('lap').textContent = '0';
+            document.getElementById('time').textContent = '0:00.00';
+            document.getElementById('lapTime').textContent = '--:--';
+            document.getElementById('bestTime').textContent = bestLapTime ? formatTime(bestLapTime) : '--:--';
+            document.getElementById('bestTime').style.color = '#ff8800';
+        }
+
+        function showMenu() {
+            gameState = 'menu';
+            document.getElementById('mainMenu').classList.remove('hidden');
+            document.getElementById('countdown').classList.add('hidden');
+            if (bestLapTime) {
+                document.getElementById('menuBestTime').textContent = `🏆 最快圈速: ${formatTime(bestLapTime)}`;
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+            if (e.code === 'Enter' && gameState === 'menu') {
+                startGame();
+            }
+        });
+
+        document.addEventListener('keyup', e => {
+            keys[e.code] = false;
+        });
+
+        function startGame() {
+            startCountdown();
+        }
+
+        // Init
+        if (bestLapTime) {
+            document.getElementById('menuBestTime').textContent = `🏆 最快圈速: ${formatTime(bestLapTime)}`;
+        }
+
+        // Start render loop
+        drawTrack();
+        gameLoop();
+    </script>
+</body>
+</html>

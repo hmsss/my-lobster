@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🎮 弹跳吃吃 Bounce & Eat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a1a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #fff;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+        #gameCanvas {
+            border: 3px solid #00ffff;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0,255,255,0.3), inset 0 0 60px rgba(0,255,255,0.05);
+        }
+        .menu-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10,10,26,0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .menu-title {
+            font-size: 2.8rem;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            margin-bottom: 5px;
+        }
+        .menu-subtitle {
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+        .menu-btn {
+            padding: 15px 50px;
+            margin: 8px;
+            border: 2px solid;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            min-width: 220px;
+        }
+        .menu-btn:hover { transform: scale(1.05); }
+        .menu-btn.endless { color: #00ff88; border-color: #00ff88; }
+        .menu-btn.endless:hover { background: rgba(0,255,136,0.2); box-shadow: 0 0 20px rgba(0,255,136,0.5); }
+        .menu-btn.timed { color: #ffff00; border-color: #ffff00; }
+        .menu-btn.timed:hover { background: rgba(255,255,0,0.2); box-shadow: 0 0 20px rgba(255,255,0,0.5); }
+        .menu-btn.zen { color: #ff00ff; border-color: #ff00ff; }
+        .menu-btn.zen:hover { background: rgba(255,0,255,0.2); box-shadow: 0 0 20px rgba(255,0,255,0.5); }
+        .menu-btn.back { color: #888; border-color: #888; font-size: 0.9rem; }
+        .menu-btn.back:hover { background: rgba(128,128,128,0.2); }
+        .menu-desc { font-size: 0.8rem; color: #666; margin-top: 5px; }
+        .best-score { color: #00ffff; margin-top: 30px; font-size: 1.1rem; }
+        .game-over-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10,10,26,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .game-over-title { font-size: 2.5rem; color: #ff0066; text-shadow: 0 0 20px #ff0066; margin-bottom: 20px; }
+        .game-over-title.new-record { color: #ffff00; text-shadow: 0 0 30px #ffff00; }
+        .game-over-stats { text-align: center; margin-bottom: 30px; }
+        .game-over-stats div { font-size: 1.2rem; margin: 8px; color: #aaa; }
+        .game-over-stats span { color: #00ff88; font-weight: bold; }
+        .new-record-badge { color: #ffff00; font-size: 1.5rem; margin: 10px 0; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .hidden { display: none !important; }
+        .instruction {
+            position: fixed;
+            bottom: 10px;
+            left: 0; right: 0;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div class="instruction">按住屏幕吸附控制 | 松开继续弹跳</div>
+
+    <!-- Main Menu -->
+    <div id="mainMenu" class="menu-overlay">
+        <div class="menu-title">🎮 弹跳吃吃</div>
+        <div class="menu-subtitle">Bounce & Eat</div>
+        <button class="menu-btn endless" onclick="selectMode('endless')">♾️ 无尽模式</button>
+        <div class="menu-desc">活得更久，得更高的分</div>
+        <button class="menu-btn timed" onclick="selectMode('timed')">⏱️ 限时 90 秒</button>
+        <div class="menu-desc">90秒内拿最高分</div>
+        <button class="menu-btn zen" onclick="selectMode('zen')">🧘 禅模式</button>
+        <div class="menu-desc">纯粹享受弹跳和吃的乐趣</div>
+        <div class="best-score" id="bestScoreDisplay"></div>
+    </div>
+
+    <!-- Mode Select Back -->
+    <div id="modeSelect" class="menu-overlay hidden">
+        <div class="menu-title">选择模式</div>
+        <button class="menu-btn endless" onclick="startGame('endless')">♾️ 无尽模式</button>
+        <button class="menu-btn timed" onclick="startGame('timed')">⏱️ 限时 90 秒</button>
+        <button class="menu-btn zen" onclick="startGame('zen')">🧘 禅模式</button>
+        <button class="menu-btn back" onclick="showMainMenu()">返回主页</button>
+    </div>
+
+    <!-- Game Over -->
+    <div id="gameOver" class="game-over-overlay hidden">
+        <div id="gameOverTitle" class="game-over-title">游戏结束</div>
+        <div id="newRecordBadge" class="new-record-badge hidden">🏆 新纪录！</div>
+        <div class="game-over-stats">
+            <div>最终得分: <span id="finalScore">0</span></div>
+            <div>存活时间: <span id="survivalTime">0:00</span></div>
+            <div>最高等级: <span id="maxLevel">Lv.1</span></div>
+        </div>
+        <button class="menu-btn endless" onclick="startGame(currentMode)">再玩一次</button>
+        <button class="menu-btn back" onclick="showMainMenu()">返回主页</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // Game state
+        let gameState = 'menu';
+        let currentMode = 'endless';
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let foodEaten = 0;
+        let gameTime = 0;
+        let raceTimer = 90;
+        let bestScore = localStorage.getItem('bounce-best') || 0;
+
+        // Physics
+        const GRAVITY = 0.15;
+        const FRICTION = 0.99;
+        const BOUNCE = 0.85;
+        const ATTRACT_SPEED = 8;
+
+        // Ball
+        let ball = {
+            x: W / 2,
+            y: H / 2,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            baseRadius: 15,
+            radius: 15,
+            invincible: false,
+            invincibleTime: 0,
+            shieldActive: false,
+            shieldTime: 0,
+            slowdown: false,
+            slowdownTime: 0
+        };
+
+        // Controls
+        let isHolding = false;
+        let holdX = 0;
+        let holdY = 0;
+
+        // Game objects
+        let foods = [];
+        let obstacles = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        // Level config
+        const levelConfig = [
+            { food: 0, radius: 15, speedBonus: 0, color: '#ffffff' },
+            { food: 5, radius: 18, speedBonus: 0.05, color: '#00ff88' },
+            { food: 12, radius: 21, speedBonus: 0.10, color: '#00ffff' },
+            { food: 20, radius: 24, speedBonus: 0.15, color: '#ff00ff' },
+            { food: 30, radius: 27, speedBonus: 0.20, color: '#ffff00' }
+        ];
+
+        // Initialize
+        function init() {
+            ball = {
+                x: W / 2,
+                y: H / 2,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                baseRadius: 15,
+                radius: 15,
+                invincible: false,
+                invincibleTime: 0,
+                shieldActive: false,
+                shieldTime: 0,
+                slowdown: false,
+                slowdownTime: 0
+            };
+            score = 0;
+            lives = 3;
+            level = 1;
+            foodEaten = 0;
+            gameTime = 0;
+            raceTimer = 90;
+            foods = [];
+            obstacles = [];
+            particles = [];
+            floatingTexts = [];
+            ball.radius = levelConfig[0].radius;
+            spawnInitialFood();
+        }
+
+        function spawnInitialFood() {
+            for (let i = 0; i < 5; i++) {
+                spawnFood();
+            }
+        }
+
+        function spawnFood() {
+            const types = ['normal', 'big', 'rainbow', 'shield', 'slowdown', 'life'];
+            const weights = [60, 20, 5, 5, 7, 3];
+            let rand = Math.random() * 100;
+            let type = 'normal';
+            for (let i = 0; i < weights.length; i++) {
+                if (rand < weights[i]) { type = types[i]; break; }
+                rand -= weights[i];
+            }
+            const padding = 50;
+            let x, y, valid = false;
+            let attempts = 0;
+            while (!valid && attempts < 20) {
+                x = padding + Math.random() * (W - padding * 2);
+                y = padding + Math.random() * (H - padding * 2);
+                valid = true;
+                // Check distance from ball
+                const dx = x - ball.x;
+                const dy = y - ball.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 80) valid = false;
+                attempts++;
+            }
+            foods.push({
+                x, y,
+                type,
+                radius: type === 'big' ? 12 : 8,
+                rainbowHue: 0,
+                pulse: 0
+            });
+        }
+
+        function spawnObstacle() {
+            if (currentMode === 'zen') return;
+            const padding = 60;
+            let x, y, valid = false;
+            let attempts = 0;
+            while (!valid && attempts < 20) {
+                x = padding + Math.random() * (W - padding * 2);
+                y = padding + Math.random() * (H - padding * 2);
+                valid = true;
+                const dx = x - ball.x;
+                const dy = y - ball.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 100) valid = false;
+                // Check other obstacles
+                for (let obs of obstacles) {
+                    const odx = x - obs.x;
+                    const ody = y - obs.y;
+                    if (Math.sqrt(odx*odx + ody*ody) < 60) valid = false;
+                }
+                attempts++;
+            }
+            const type = Math.random() < 0.6 ? 'spike' : 'block';
+            obstacles.push({
+                x, y,
+                type,
+                size: type === 'spike' ? 25 : 30,
+                vx: (Math.random() - 0.5) * (currentMode === 'zen' ? 0 : 2),
+                vy: (Math.random() - 0.5) * (currentMode === 'zen' ? 0 : 2),
+                hue: type === 'spike' ? 330 : 210,
+                alpha: 1,
+                shrinking: false
+            });
+        }
+
+        function createParticles(x, y, color, count = 10) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 5;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 2 + Math.random() * 4,
+                    color,
+                    life: 1
+                });
+            }
+        }
+
+        function createFloatingText(x, y, text, color) {
+            floatingTexts.push({ x, y, text, color, life: 1, dy: -2 });
+        }
+
+        function updateBall() {
+            // Apply gravity
+            ball.vy += GRAVITY;
+
+            // Speed bonus from level
+            const speedMult = 1 + levelConfig[level - 1].speedBonus;
+
+            // Attraction
+            if (isHolding) {
+                const dx = holdX - ball.x;
+                const dy = holdY - ball.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    ball.vx += (dx / dist) * ATTRACT_SPEED * 0.1;
+                    ball.vy += (dy / dist) * ATTRACT_SPEED * 0.1;
+                }
+                // Draw attraction line
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(holdX, holdY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Apply friction
+            ball.vx *= FRICTION;
+            ball.vy *= FRICTION;
+
+            // Limit speed
+            const maxSpeed = 15 * speedMult;
+            const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+            if (speed > maxSpeed) {
+                ball.vx = (ball.vx / speed) * maxSpeed;
+                ball.vy = (ball.vy / speed) * maxSpeed;
+            }
+
+            // Move
+            ball.x += ball.vx * speedMult;
+            ball.y += ball.vy * speedMult;
+
+            // Boundary bounce
+            if (ball.x - ball.radius < 0) {
+                ball.x = ball.radius;
+                ball.vx *= -BOUNCE;
+            }
+            if (ball.x + ball.radius > W) {
+                ball.x = W - ball.radius;
+                ball.vx *= -BOUNCE;
+            }
+            if (ball.y - ball.radius < 0) {
+                ball.y = ball.radius;
+                ball.vy *= -BOUNCE;
+            }
+            if (ball.y + ball.radius > H) {
+                ball.y = H - ball.radius;
+                ball.vy *= -BOUNCE;
+            }
+
+            // Timers
+            if (ball.invincible) {
+                ball.invincibleTime -= 16;
+                if (ball.invincibleTime <= 0) ball.invincible = false;
+            }
+            if (ball.shieldActive) {
+                ball.shieldTime -= 16;
+                if (ball.shieldTime <= 0) ball.shieldActive = false;
+            }
+            if (ball.slowdown) {
+                ball.slowdownTime -= 16;
+                if (ball.slowdownTime <= 0) ball.slowdown = false;
+            }
+        }
+
+        function updateFoods() {
+            for (let i = foods.length - 1; i >= 0; i--) {
+                const f = foods[i];
+                f.pulse += 0.1;
+                f.rainbowHue = (f.rainbowHue + 3) % 360;
+
+                // Collision with ball
+                const dx = ball.x - f.x;
+                const dy = ball.y - f.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < ball.radius + f.radius) {
+                    eatFood(f, i);
+                }
+            }
+        }
+
+        function eatFood(f, i) {
+            foods.splice(i, 1);
+            let points = 0;
+            let color = '#ffff00';
+            let text = '';
+
+            switch (f.type) {
+                case 'normal':
+                    points = 10;
+                    text = '+10';
+                    color = '#ffff00';
+                    foodEaten++;
+                    break;
+                case 'big':
+                    points = 25;
+                    text = '+25';
+                    color = '#ffaa00';
+                    foodEaten += 2;
+                    break;
+                case 'rainbow':
+                    points = 50;
+                    text = '+50 🌈';
+                    color = '#ff00ff';
+                    foodEaten += 3;
+                    clearScreen();
+                    break;
+                case 'shield':
+                    ball.shieldActive = true;
+                    ball.shieldTime = 5000;
+                    text = '🛡️ 护盾';
+                    color = '#00ff00';
+                    break;
+                case 'slowdown':
+                    ball.slowdown = true;
+                    ball.slowdownTime = 5000;
+                    text = '🐢 减速';
+                    color = '#00aaff';
+                    break;
+                case 'life':
+                    if (lives < 5) lives++;
+                    text = '❤️ +1命';
+                    color = '#ff6688';
+                    break;
+            }
+
+            score += points;
+            createParticles(f.x, f.y, color, 15);
+            createFloatingText(f.x, f.y - 20, text, color);
+            spawnFood();
+
+            // Level up check
+            checkLevelUp();
+        }
+
+        function checkLevelUp() {
+            const thresholds = [5, 12, 20, 30];
+            let newLevel = 1;
+            for (let t of thresholds) {
+                if (foodEaten >= t) newLevel++;
+            }
+            if (newLevel > level && newLevel <= 5) {
+                level = newLevel;
+                ball.radius = levelConfig[level - 1].radius;
+                score += 30;
+                createFloatingText(ball.x, ball.y - 40, `升级! Lv.${level}`, levelConfig[level - 1].color);
+                createParticles(ball.x, ball.y, levelConfig[level - 1].color, 30);
+                flashScreen(levelConfig[level - 1].color);
+            }
+        }
+
+        function clearScreen() {
+            for (let obs of obstacles) {
+                if (!obs.shrinking) {
+                    obs.shrinking = true;
+                    score += 20;
+                }
+            }
+            createParticles(W/2, H/2, '#ff00ff', 50);
+        }
+
+        function flashScreen(color) {
+            // Visual flash handled in draw
+        }
+
+        function updateObstacles() {
+            if (currentMode === 'zen') return;
+
+            const speedMult = ball.slowdown ? 0.5 : 1;
+            const timeSec = gameTime / 1000;
+
+            // Spawn new obstacles based on time
+            const maxObs = timeSec < 30 ? 5 : timeSec < 60 ? 8 : timeSec < 120 ? 12 : 15;
+            if (obstacles.length < maxObs && Math.random() < 0.02) {
+                spawnObstacle();
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+
+                if (obs.shrinking) {
+                    obs.alpha -= 0.05;
+                    obs.size *= 0.9;
+                    if (obs.alpha <= 0) {
+                        obstacles.splice(i, 1);
+                        continue;
+                    }
+                } else {
+                    obs.x += obs.vx * speedMult;
+                    obs.y += obs.vy * speedMult;
+
+                    // Bounce off walls
+                    if (obs.x < obs.size/2 || obs.x > W - obs.size/2) obs.vx *= -1;
+                    if (obs.y < obs.size/2 || obs.y > H - obs.size/2) obs.vy *= -1;
+                    obs.x = Math.max(obs.size/2, Math.min(W - obs.size/2, obs.x));
+                    obs.y = Math.max(obs.size/2, Math.min(H - obs.size/2, obs.y));
+                }
+
+                // Collision with ball
+                if (!ball.invincible && !ball.shieldActive) {
+                    const dx = ball.x - obs.x;
+                    const dy = ball.y - obs.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = ball.radius + obs.size / 2;
+
+                    if (dist < minDist) {
+                        if (obs.type === 'spike') {
+                            // Hit spike
+                            lives--;
+                            ball.invincible = true;
+                            ball.invincibleTime = 1500;
+                            createParticles(ball.x, ball.y, '#ff0066', 20);
+                            createFloatingText(ball.x, ball.y - 30, '💥 -1命', '#ff0066');
+                            flashScreen('#ff0066');
+
+                            if (lives <= 0) {
+                                gameOver();
+                            }
+                        } else {
+                            // Hit block - destroy it
+                            obs.shrinking = true;
+                            score += 20;
+                            createParticles(obs.x, obs.y, '#0066ff', 15);
+                            createFloatingText(obs.x, obs.y - 20, '+20', '#0066ff');
+                        }
+
+                        // Bounce ball
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        ball.vx = nx * 8;
+                        ball.vy = ny * 8;
+                    }
+                }
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.life -= 0.02;
+                p.radius *= 0.98;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function updateFloatingTexts() {
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const t = floatingTexts[i];
+                t.y += t.dy;
+                t.life -= 0.02;
+                if (t.life <= 0) floatingTexts.splice(i, 1);
+            }
+        }
+
+        function drawBall() {
+            const cfg = levelConfig[level - 1];
+
+            // Trail for level 5
+            if (level >= 5) {
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = cfg.color;
+                ctx.beginPath();
+                ctx.arc(ball.x - ball.vx * 2, ball.y - ball.vy * 2, ball.radius * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 0.15;
+                ctx.beginPath();
+                ctx.arc(ball.x - ball.vx * 4, ball.y - ball.vy * 4, ball.radius * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+
+            // Shield
+            if (ball.shieldActive) {
+                ctx.strokeStyle = 'rgba(0,255,0,0.6)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius + 8 + Math.sin(Date.now() / 100) * 3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Invincibility flash
+            if (ball.invincible && Math.floor(Date.now() / 100) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
+            }
+
+            // Glow
+            const gradient = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, ball.radius * 2);
+            gradient.addColorStop(0, cfg.color);
+            gradient.addColorStop(0.5, cfg.color + '80');
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ball
+            ctx.fillStyle = cfg.color;
+            ctx.shadowColor = cfg.color;
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Inner highlight
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(ball.x - ball.radius * 0.3, ball.y - ball.radius * 0.3, ball.radius * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.globalAlpha = 1;
+        }
+
+        function drawFoods() {
+            for (let f of foods) {
+                const pulseR = f.radius + Math.sin(f.pulse) * 2;
+
+                if (f.type === 'rainbow') {
+                    const hue = f.rainbowHue;
+                    ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                    ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
+                } else if (f.type === 'shield') {
+                    ctx.fillStyle = '#00ff00';
+                    ctx.shadowColor = '#00ff00';
+                } else if (f.type === 'slowdown') {
+                    ctx.fillStyle = '#00aaff';
+                    ctx.shadowColor = '#00aaff';
+                } else if (f.type === 'life') {
+                    ctx.fillStyle = '#ff6688';
+                    ctx.shadowColor = '#ff6688';
+                } else {
+                    ctx.fillStyle = f.type === 'big' ? '#ffaa00' : '#ffff00';
+                    ctx.shadowColor = ctx.fillStyle;
+                }
+
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, pulseR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Icon
+                ctx.fillStyle = '#fff';
+                ctx.font = `${pulseR}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                let icon = '';
+                if (f.type === 'rainbow') icon = '🌈';
+                else if (f.type === 'shield') icon = '🛡️';
+                else if (f.type === 'slowdown') icon = '🐢';
+                else if (f.type === 'life') icon = '❤️';
+                if (icon) ctx.fillText(icon, f.x, f.y);
+            }
+        }
+
+        function drawObstacles() {
+            for (let obs of obstacles) {
+                ctx.globalAlpha = obs.alpha;
+                ctx.fillStyle = `hsl(${obs.hue}, 100%, 50%)`;
+                ctx.shadowColor = ctx.fillStyle;
+                ctx.shadowBlur = 15;
+
+                if (obs.type === 'spike') {
+                    // Triangle spike
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y - obs.size / 2);
+                    ctx.lineTo(obs.x - obs.size / 2, obs.y + obs.size / 2);
+                    ctx.lineTo(obs.x + obs.size / 2, obs.y + obs.size / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    // Square block
+                    ctx.fillRect(obs.x - obs.size / 2, obs.y - obs.size / 2, obs.size, obs.size);
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        function drawParticles() {
+            for (let p of particles) {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawFloatingTexts() {
+            for (let t of floatingTexts) {
+                ctx.globalAlpha = t.life;
+                ctx.fillStyle = t.color;
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(t.text, t.x, t.y);
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function drawHUD() {
+            // Background bar
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(0, 0, W, 45);
+
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            // Score
+            ctx.fillStyle = '#00ff88';
+            ctx.fillText(`📊 ${score}`, 10, 22);
+
+            // Lives (if not zen)
+            if (currentMode !== 'zen') {
+                ctx.fillStyle = '#ff6688';
+                let hearts = '';
+                for (let i = 0; i < lives; i++) hearts += '❤️';
+                for (let i = lives; i < 3; i++) hearts += '🖤';
+                ctx.fillText(hearts, 110, 22);
+            }
+
+            // Level
+            ctx.fillStyle = levelConfig[level - 1].color;
+            ctx.fillText(`Lv.${level}`, 220, 22);
+
+            // Timer
+            if (currentMode === 'timed') {
+                ctx.textAlign = 'right';
+                ctx.fillStyle = raceTimer <= 10 ? '#ff0066' : '#ffff00';
+                ctx.fillText(`⏱️ ${Math.ceil(raceTimer)}s`, W - 10, 22);
+            } else if (currentMode === 'endless') {
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#aaa';
+                const secs = Math.floor(gameTime / 1000);
+                ctx.fillText(`${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`, W - 10, 22);
+            }
+
+            // Shield/slowdown indicators
+            if (ball.shieldActive) {
+                ctx.fillStyle = '#00ff00';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`🛡️ ${Math.ceil(ball.shieldTime / 1000)}s`, 10, 38);
+            }
+            if (ball.slowdown) {
+                ctx.fillStyle = '#00aaff';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`🐢 ${Math.ceil(ball.slowdownTime / 1000)}s`, 70, 38);
+            }
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#12122a';
+            ctx.fillRect(0, 0, W, H);
+
+            // Grid pattern
+            ctx.strokeStyle = 'rgba(0,255,255,0.03)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < W; x += 30) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let y = 0; y < H; y += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+        }
+
+        let lastTime = 0;
+        let flashAlpha = 0;
+        let flashColor = '#fff';
+
+        function gameLoop(timestamp) {
+            if (gameState !== 'playing') return;
+
+            const delta = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Update timers
+            gameTime += delta;
+            if (currentMode === 'timed') {
+                raceTimer -= delta / 1000;
+                if (raceTimer <= 0) {
+                    raceTimer = 0;
+                    gameOver();
+                }
+            }
+
+            // Update
+            updateBall();
+            updateFoods();
+            updateObstacles();
+            updateParticles();
+            updateFloatingTexts();
+
+            // Flash effect
+            if (flashAlpha > 0) flashAlpha -= 0.05;
+
+            // Draw
+            drawBackground();
+            drawObstacles();
+            drawFoods();
+            drawBall();
+            drawParticles();
+            drawFloatingTexts();
+
+            // Flash overlay
+            if (flashAlpha > 0) {
+                ctx.globalAlpha = flashAlpha;
+                ctx.fillStyle = flashColor;
+                ctx.fillRect(0, 0, W, H);
+                ctx.globalAlpha = 1;
+            }
+
+            drawHUD();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function flashScreen(color) {
+            flashAlpha = 0.5;
+            flashColor = color;
+        }
+
+        function startGame(mode) {
+            currentMode = mode;
+            gameState = 'playing';
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('modeSelect').classList.add('hidden');
+            document.getElementById('gameOver').classList.add('hidden');
+            init();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameState = 'gameover';
+            const isNewRecord = score > bestScore;
+            if (isNewRecord) {
+                bestScore = score;
+                localStorage.setItem('bounce-best', bestScore);
+            }
+
+            setTimeout(() => {
+                document.getElementById('gameOver').classList.remove('hidden');
+                document.getElementById('gameOverTitle').textContent = '游戏结束';
+                document.getElementById('gameOverTitle').className = 'game-over-title';
+                document.getElementById('finalScore').textContent = score;
+                const secs = Math.floor(gameTime / 1000);
+                document.getElementById('survivalTime').textContent = `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
+                document.getElementById('maxLevel').textContent = `Lv.${level}`;
+                document.getElementById('newRecordBadge').classList.toggle('hidden', !isNewRecord);
+            }, 500);
+        }
+
+        function showMainMenu() {
+            gameState = 'menu';
+            document.getElementById('mainMenu').classList.remove('hidden');
+            document.getElementById('modeSelect').classList.add('hidden');
+            document.get            document.getElementById('gameOver').classList.add('hidden');
+            updateBestScoreDisplay();
+        }
+
+        function selectMode(mode) {
+            currentMode = mode;
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('modeSelect').classList.remove('hidden');
+        }
+
+        function updateBestScoreDisplay() {
+            if (bestScore > 0) {
+                document.getElementById('bestScoreDisplay').textContent = `🏆 最高分: ${bestScore}`;
+            }
+        }
+
+        // Event listeners
+        function getCanvasPos(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (clientX - rect.left) * (W / rect.width),
+                y: (clientY - rect.top) * (H / rect.height)
+            };
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            if (gameState !== 'playing') return;
+            isHolding = true;
+            const pos = getCanvasPos(e.clientX, e.clientY);
+            holdX = pos.x;
+            holdY = pos.y;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (!isHolding || gameState !== 'playing') return;
+            const pos = getCanvasPos(e.clientX, e.clientY);
+            holdX = pos.x;
+            holdY = pos.y;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isHolding = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isHolding = false;
+        });
+
+        // Touch events
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            if (gameState !== 'playing') return;
+            isHolding = true;
+            const touch = e.touches[0];
+            const pos = getCanvasPos(touch.clientX, touch.clientY);
+            holdX = pos.x;
+            holdY = pos.y;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (!isHolding || gameState !== 'playing') return;
+            const touch = e.touches[0];
+            const pos = getCanvasPos(touch.clientX, touch.clientY);
+            holdX = pos.x;
+            holdY = pos.y;
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            isHolding = false;
+        }, { passive: false });
+
+        // Keyboard
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space' && gameState === 'menu') {
+                startGame('endless');
+            }
+        });
+
+        // Init
+        updateBestScoreDisplay();
+    </script>
+</body>
+</html>
