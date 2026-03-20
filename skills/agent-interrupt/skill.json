@@ -1,0 +1,15 @@
+{
+  "name": "agent-interrupt",
+  "description": "中断 Agent 任务的 CLI 工具。支持中断单个或所有正在运行的 Agent。",
+  "triggers": [
+    "zd",
+    "stop",
+    "kill"
+  ],
+  "commands": {
+    "zd": "agent-interrupt.sh -all",
+    "zd -all": "agent-interrupt.sh -all",
+    "zd -status": "agent-interrupt.sh -status"
+  },
+  "location": "/root/.openclaw/workspace/skills/agent-interrupt/SKILL.md"
+}
