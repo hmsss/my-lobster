@@ -1,0 +1,11 @@
+{
+  "name": "team-collab",
+  "description": "团队协作规范 Skill。所有员工共享的协作规范，包括任务接收、进度汇报、状态管理。",
+  "triggers": [
+    "收到任务",
+    "进度汇报",
+    "任务完成",
+    "更新状态"
+  ],
+  "location": "/root/.openclaw/workspace/skills/team-collab/SKILL.md"
+}
