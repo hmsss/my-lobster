@@ -464,7 +464,8 @@ function processSessionLine(agentId, line) {
 
     // 生成摘要
     const agentName = AGENT_NAMES[agentId] || agentId;
-    let summary = textContent.replace(/\*\*/g, '').replace(/`/g, '');
+    // 移除消息前缀 [xxx] 以及格式化符号
+    let summary = textContent.replace(/^\[.*?]\s*/, '').replace(/\*\*/g, '').replace(/`/g, '');
     if (summary.length > 100) {
       summary = summary.substring(0, 100) + '...';
     }
