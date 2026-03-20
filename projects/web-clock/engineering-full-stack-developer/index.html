@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web 时钟</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #121212;
+            color: #fff;
+            min-height: 100vh;
+        }
+        body.light { background: #f5f5f5; color: #333; }
+        .app { max-width: 500px; margin: 0 auto; padding: 20px; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px; flex-wrap: wrap; }
+        .tab { padding: 8px 12px; border: none; border-radius: 20px; background: #2d2d2d; color: #999; cursor: pointer; white-space: nowrap; transition: all 0.2s; font-size: 13px; }
+        body.light .tab { background: #e0e0e0; }
+        .tab.active { background: #1976d2; color: #fff; }
+        .clock-container { text-align: center; margin-bottom: 30px; }
+        .digital-time { font-size: 3.5rem; font-weight: 200; font-variant-numeric: tabular-nums; margin-bottom: 5px; }
+        .date-display { font-size: 1rem; color: #999; margin-bottom: 20px; }
+        body.light .date-display { color: #666; }
+        .analog-clock { width: 220px; height: 220px; border-radius: 50%; background: #1e1e1e; margin: 0 auto 20px; position: relative; border: 3px solid #333; }
+        body.light .analog-clock { background: #fff; border-color: #ddd; }
+        .clock-center { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; }
+        body.light .clock-center { background: #333; }
+        .clock-hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; border-radius: 3px; }
+        .hour-hand { width: 3px; height: 55px; background: #fff; margin-left: -1.5px; z-index: 8; }
+        body.light .hour-hand { background: #333; }
+        .minute-hand { width: 2px; height: 75px; background: #ccc; margin-left: -1px; z-index: 7; }
+        body.light .minute-hand { background: #666; }
+        .second-hand { width: 1px; height: 85px; background: #f44336; margin-left: -0.5px; z-index: 9; }
+        .clock-mark { position: absolute; width: 2px; height: 8px; background: #555; top: 6px; left: 50%; margin-left: -1px; transform-origin: 104px 104px; }
+        body.light .clock-mark { background: #ccc; }
+        .clock-mark.major { height: 12px; margin-left: -1.5px; transform-origin: 104px 104px; }
+        .clock-number { position: absolute; font-size: 12px; font-weight: bold; color: #fff; }
+        body.light .clock-number { color: #333; }
+        .card { background: #1e1e1e; border-radius: 16px; padding: 20px; margin-bottom: 15px; }
+        body.light .card { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .card-title { font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .world-clock-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #2d2d2d; border-radius: 10px; margin-bottom: 8px; }
+        body.light .world-clock-item { background: #f5f5f5; }
+        .world-clock-item .city { font-weight: bold; }
+        .world-clock-item .time { font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+        .world-clock-item .tz { font-size: 0.8rem; color: #999; }
+        .alarm-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #2d2d2d; border-radius: 10px; margin-bottom: 8px; }
+        body.light .alarm-item { background: #f5f5f5; }
+        .alarm-item .time { font-size: 1.4rem; font-weight: bold; }
+        .alarm-item .label { font-size: 0.85rem; color: #999; }
+        .alarm-item .actions { display: flex; gap: 8px; align-items: center; }
+        .toggle-btn { padding: 6px 12px; border: none; border-radius: 15px; cursor: pointer; font-size: 11px; }
+        .toggle-btn.on { background: #4caf50; color: #fff; }
+        .toggle-btn.off { background: #666; color: #fff; }
+        .icon-btn { width: 32px; height: 32px; border: none; border-radius: 50%; background: #444; color: #fff; cursor: pointer; font-size: 14px; }
+        .delete-btn { background: #f44336; }
+        .stopwatch-display { font-size: 2.5rem; font-variant-numeric: tabular-nums; text-align: center; margin: 15px 0; }
+        .stopwatch-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; }
+        .stopwatch-btn { padding: 10px 20px; border: none; border-radius: 20px; font-size: 0.9rem; cursor: pointer; }
+        .stopwatch-btn.start { background: #4caf50; color: #fff; }
+        .stopwatch-btn.pause { background: #ff9800; color: #fff; }
+        .stopwatch-btn.reset { background: #666; color: #fff; }
+        .lap-item { display: flex; justify-content: space-between; padding: 8px 12px; background: #2d2d2d; border-radius: 6px; margin-bottom: 4px; font-size: 0.9rem; }
+        body.light .lap-item { background: #f0f0f0; }
+        .timer-display { font-size: 3rem; font-variant-numeric: tabular-nums; text-align: center; margin: 15px 0; color: #1976d2; }
+        .timer-display.warning { color: #f44336; }
+        .timer-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
+        .timer-presets { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .preset-btn { padding: 8px 15px; border: 1px solid #444; border-radius: 15px; background: transparent; color: #fff; cursor: pointer; font-size: 0.85rem; }
+        body.light .preset-btn { border-color: #ccc; color: #333; }
+        .preset-btn:hover { border-color: #1976d2; color: #1976d2; }
+        .pomodoro-display { text-align: center; margin: 15px 0; }
+        .pomodoro-tomatoes { font-size: 2rem; margin-bottom: 5px; }
+        .pomodoro-time { font-size: 3rem; font-variant-numeric: tabular-nums; color: #f44336; }
+        .pomodoro-status { font-size: 1rem; color: #999; margin-top: 5px; }
+        .pomodoro-controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
+        .pomodoro-stats { display: flex; gap: 10px; justify-content: center; }
+        .pomodoro-stat { padding: 10px 15px; background: #2d2d2d; border-radius: 8px; text-align: center; }
+        body.light .pomodoro-stat { background: #f0f0f0; }
+        .pomodoro-stat .value { font-size: 1.2rem; font-weight: bold; }
+        .pomodoro-stat .label { font-size: 0.75rem; color: #999; }
+        .settings-icon { position: fixed; top: 15px; right: 15px; width: 36px; height: 36px; border: none; border-radius: 50%; background: #2d2d2d; color: #fff; font-size: 18px; cursor: pointer; z-index: 50; }
+        body.light .settings-icon { background: #e0e0e0; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: #1e1e1e; border-radius: 16px; padding: 20px; width: 90%; max-width: 320px; }
+        body.light .modal-content { background: #fff; }
+        .modal-title { font-size: 1.1rem; margin-bottom: 15px; text-align: center; }
+        .time-inputs { display: flex; gap: 10px; margin-bottom: 12px; }
+        .time-inputs input { flex: 1; padding: 10px; border: 1px solid #444; border-radius: 8px; background: #2d2d2d; color: #fff; font-size: 1.2rem; text-align: center; }
+        body.light .time-inputs input { background: #f5f5f5; border-color: #ddd; color: #333; }
+        .modal-input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #444; border-radius: 8px; background: #2d2d2d; color: #fff; font-size: 0.9rem; }
+        body.light .modal-input { background: #f5f5f5; border-color: #ddd; color: #333; }
+        .modal-actions { display: flex; gap: 8px; justify-content: center; margin-top: 15px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 20px; font-size: 0.9rem; cursor: pointer; }
+        .btn-primary { background: #1976d2; color: #fff; }
+        .btn-secondary { background: #666; color: #fff; }
+        body.light .btn-secondary { background: #ddd; color: #333; }
+        .select { width: 100%; padding: 10px; border: 1px solid #444; border-radius: 8px; background: #2d2d2d; color: #fff; font-size: 0.9rem; margin-bottom: 12px; }
+        body.light .select { background: #fff; border-color: #ddd; color: #333; }
+        .toggle-switch { width: 44px; height: 24px; background: #666; border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s; }
+        .toggle-switch.on { background: #4caf50; }
+        .toggle-switch::after { content: ''; position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; }
+        .toggle-switch.on::after { left: 22px; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #333; }
+        body.light .setting-item { border-color: #eee; }
+        .setting-item:last-child { border-bottom: none; }
+        .alarm-ring { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+        .alarm-ring-time { font-size: 3.5rem; color: #f44336; margin-bottom: 15px; }
+        .alarm-ring-label { font-size: 1.3rem; color: #fff; margin-bottom: 30px; }
+        .alarm-ring-btn { padding: 15px 40px; border: none; border-radius: 25px; font-size: 1rem; cursor: pointer; margin: 8px; }
+        .alarm-ring-btn.dismiss { background: #f44336; color: #fff; }
+        .alarm-ring-btn.snooze { background: #666; color: #fff; }
+        .add-btn { width: 100%; padding: 12px; border: 2px dashed #444; border-radius: 10px; background: transparent; color: #999; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
+        .add-btn:hover { border-color: #1976d2; color: #1976d2; }
+        input[type="number"] { width: 70px; padding: 8px; border: 1px solid #444; border-radius: 8px; background: #2d2d2d; color: #fff; font-size: 1rem; text-align: center; }
+        body.light input[type="number"] { background: #f5f5f5; border-color: #ddd; color: #333; }
+        .quick-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <button class="settings-icon" @click="showSettings = true">⚙️</button>
+
+        <div class="tabs">
+            <button class="tab" :class="{active: tab === 'clock'}" @click="tab = 'clock'">🕐 时钟</button>
+            <button class="tab" :class="{active: tab === 'world'}" @click="tab = 'world'">🌍</button>
+            <button class="tab" :class="{active: tab === 'alarm'}" @click="tab = 'alarm'">⏰</button>
+            <button class="tab" :class="{active: tab === 'stopwatch'}" @click="tab = 'stopwatch'">⏱️</button>
+            <button class="tab" :class="{active: tab === 'timer'}" @click="tab = 'timer'">⏳</button>
+            <button class="tab" :class="{active: tab === 'pomodoro'}" @click="tab = 'pomodoro'">🍅</button>
+        </div>
+
+        <!-- Clock Tab -->
+        <div v-if="tab === 'clock'" class="clock-container">
+            <div class="analog-clock">
+                <div v-for="i in 60" :key="'m'+i" class="clock-mark" :class="{major: i % 5 === 0}" :style="{transform: `rotate(${i * 6}deg)`}"></div>
+                <div class="clock-number" style="top: 18px; left: 50%; transform: translateX(-50%);">12</div>
+                <div class="clock-number" style="top: 40px; right: 30px;">1</div>
+                <div class="clock-number" style="top: 65px; right: 15px;">2</div>
+                <div class="clock-number" style="top: 100px; right: 10px; transform: translateY(-50%);">3</div>
+                <div class="clock-number" style="bottom: 65px; right: 15px;">4</div>
+                <div class="clock-number" style="bottom: 40px; right: 30px;">5</div>
+                <div class="clock-number" style="bottom: 18px; left: 50%; transform: translateX(-50%);">6</div>
+                <div class="clock-number" style="bottom: 40px; left: 30px;">7</div>
+                <div class="clock-number" style="bottom: 65px; left: 15px;">8</div>
+                <div class="clock-number" style="top: 100px; left: 10px; transform: translateY(-50%);">9</div>
+                <div class="clock-number" style="top: 65px; left: 15px;">10</div>
+                <div class="clock-number" style="top: 40px; left: 30px;">11</div>
+                <div class="clock-hand hour-hand" :style="{transform: `translateX(-50%) rotate(${hourAngle}deg)`}"></div>
+                <div class="clock-hand minute-hand" :style="{transform: `translateX(-50%) rotate(${minuteAngle}deg)`}"></div>
+                <div class="clock-hand second-hand" :style="{transform: `translateX(-50%) rotate(${secondAngle}deg)`}"></div>
+                <div class="clock-center"></div>
+            </div>
+            <div class="digital-time">{{ digitalTime }}</div>
+            <div class="date-display">{{ currentDate }}</div>
+            <div class="quick-actions">
+                <button class="tab" :class="{active: is24Hour}" @click="is24Hour = !is24Hour; saveSettings()">{{ is24Hour ? '24h' : '12h' }}</button>
+                <button class="tab" :class="{active: showSeconds}" @click="showSeconds = !showSeconds; saveSettings()">{{ showSeconds ? '秒' : '无秒' }}</button>
+            </div>
+        </div>
+
+        <!-- World Clock Tab -->
+        <div v-if="tab === 'world'">
+            <div class="card">
+                <div class="card-title">🌍 世界时钟</div>
+                <div v-for="(city, idx) in worldCities" :key="idx" class="world-clock-item">
+                    <div>
+                        <div class="city">{{ city.name }}</div>
+                        <div class="tz">UTC{{ city.offset >= 0 ? '+' + city.offset : city.offset }}</div>
+                    </div>
+                    <div class="time">{{ getWorldTime(city.offset) }}</div>
+                </div>
+                <button class="add-btn" @click="showAddCity = true">+ 添加城市</button>
+            </div>
+        </div>
+
+        <!-- Alarm Tab -->
+        <div v-if="tab === 'alarm'">
+            <div class="card">
+                <div class="card-title">⏰ 闹钟</div>
+                <div v-if="alarms.length === 0" style="text-align: center; color: #999; padding: 20px;">暂无闹钟</div>
+                <div v-for="(alarm, idx) in alarms" :key="idx" class="alarm-item">
+                    <div>
+                        <div class="time">{{ pad(alarm.hours) }}:{{ pad(alarm.minutes) }}</div>
+                        <div class="label">{{ alarm.label || '闹钟' }}</div>
+                    </div>
+                    <div class="actions">
+                        <button class="toggle-btn" :class="alarm.enabled ? 'on' : 'off'" @click="toggleAlarm(idx)">{{ alarm.enabled ? 'ON' : 'OFF' }}</button>
+                        <button class="icon-btn delete-btn" @click="deleteAlarm(idx)">🗑️</button>
+                    </div>
+                </div>
+                <button class="add-btn" @click="showAddAlarm = true">+ 添加闹钟</button>
+            </div>
+        </div>
+
+        <!-- Stopwatch Tab -->
+        <div v-if="tab === 'stopwatch'">
+            <div class="card">
+                <div class="card-title">⏱️ 秒表</div>
+                <div class="stopwatch-display">{{ formatSW(stopwatchTime) }}</div>
+                <div class="stopwatch-controls">
+                    <button v-if="!swRunning" class="stopwatch-btn start" @click="startSW">开始</button>
+                    <button v-else class="stopwatch-btn pause" @click="pauseSW">暂停</button>
+                    <button class="stopwatch-btn reset" @click="resetSW">重置</button>
+                    <button class="stopwatch-btn" @click="lapSW" :disabled="!swRunning">计次</button>
+                </div>
+                <div v-for="(l, idx) in lapRecords" :key="idx" class="lap-item">
+                    <span>#{{ idx + 1 }}</span>
+                    <span>{{ formatSW(l.time) }}</span>
+                    <span style="color: #999;">{{ l.diff > 0 ? '+' + formatSW(l.diff) : '' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timer Tab -->
+        <div v-if="tab === 'timer'">
+            <div class="card">
+                <div class="card-title">⏳ 倒计时</div>
+                <div class="timer-display" :class="{warning: timerRem < 10 && timerRem > 0}">{{ formatTM(timerRem) }}</div>
+                <div class="timer-controls">
+                    <button v-if="!timerRunning" class="stopwatch-btn start" @click="startTM">开始</button>
+                    <button v-else class="stopwatch-btn pause" @click="pauseTM">暂停</button>
+                    <button class="stopwatch-btn reset" @click="resetTM">重置</button>
+                </div>
+                <div class="timer-presets">
+                    <button class="preset-btn" @click="setTM(5)">5分</button>
+                    <button class="preset-btn" @click="setTM(10)">10分</button>
+                    <button class="preset-btn" @click="setTM(15)">15分</button>
+                    <button class="preset-btn" @click="setTM(25)">25分</button>
+                </div>
+                <div v-if="!timerRunning && timerRem === 0" style="margin-top: 15px; text-align: center;">
+                    <input type="number" v-model.number="timerInput" min="1" max="999" style="width: 60px;"> 分钟
+                    <button class="btn btn-primary" @click="setTM(timerInput)" style="margin-left: 8px;">设置</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pomodoro Tab -->
+        <div v-if="tab === 'pomodoro'">
+            <div class="card">
+                <div class="card-title">🍅 番茄钟</div>
+                <div class="pomodoro-display">
+                    <div class="pomodoro-tomatoes">{{ '🍅'.repeat(pomoCount) }}{{ '🌓'.repeat(4 - pomoCount) }}</div>
+                    <div class="pomodoro-time">{{ formatTM(pomoTime) }}</div>
+                    <div class="pomodoro-status">{{ pomoStatus }}</div>
+                </div>
+                <div class="pomodoro-controls">
+                    <button v-if="!pomoRunning" class="stopwatch-btn start" @click="startPomo">开始</button>
+                    <button v-else class="stopwatch-btn pause" @click="pausePomo">暂停</button>
+                    <button class="stopwatch-btn reset" @click="resetPomo">重置</button>
+                </div>
+                <div class="pomodoro-stats">
+                    <div class="pomodoro-stat"><div class="value">{{ pomoSettings.work }}</div><div class="label">工作(分)</div></div>
+                    <div class="pomodoro-stat"><div class="value">{{ pomoSettings.b }}</div><div class="label">休息(分)</div></div>
+                    <div class="pomodoro-stat"><div class="value">{{ todayPomos }}</div><div class="label">今日</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div v-if="showSettings" class="modal" @click.self="showSettings = false">
+            <div class="modal-content">
+                <div class="modal-title">⚙️ 设置</div>
+                <div class="setting-item">
+                    <span>深色模式</span>
+                    <div class="toggle-switch" :class="{on: isDark}" @click="toggleTheme"></div>
+                </div>
+                <div class="setting-item">
+                    <span>24小时制</span>
+                    <div class="toggle-switch" :class="{on: is24Hour}" @click="is24Hour = !is24Hour; saveSettings()"></div>
+                </div>
+                <div class="setting-item">
+                    <span>显示秒数</span>
+                    <div class="toggle-switch" :class="{on: showSeconds}" @click="showSeconds = !showSeconds; saveSettings()"></div>
+                </div>
+                <div class="modal-actions"><button class="btn btn-primary" @click="showSettings = false">关闭</button></div>
+            </div>
+        </div>
+
+        <!-- Add Alarm Modal -->
+        <div v-if="showAddAlarm" class="modal" @click.self="showAddAlarm = false">
+            <div class="modal-content">
+                <div class="modal-title">⏰ 添加闹钟</div>
+                <div class="time-inputs">
+                    <input type="number" v-model.number="newAlarmH" min="0" max="23">
+                    <input type="number" v-model.number="newAlarmM" min="0" max="59">
+                </div>
+                <input class="modal-input" v-model="newAlarmLabel" placeholder="名称（可选）">
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" @click="showAddAlarm = false">取消</button>
+                    <button class="btn btn-primary" @click="addAlarm">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add City Modal -->
+        <div v-if="showAddCity" class="modal" @click.self="showAddCity = false">
+            <div class="modal-content">
+                <div class="modal-title">🌍 添加城市</div>
+                <select class="select" v-model="selectedCity">
+                    <option value="">选择城市</option>
+                    <option v-for="c in availCities" :key="c.name" :value="c.name">{{ c.name }} (UTC{{ c.offset >= 0 ? '+' + c.offset : c.offset }})</option>
+                </select>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" @click="showAddCity = false">取消</button>
+                    <button class="btn btn-primary" @click="addCity" :disabled="!selectedCity">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alarm Ringing -->
+        <div v-if="ringing" class="alarm-ring">
+            <div class="alarm-ring-time">{{ pad(ringing.hours) }}:{{ pad(ringing.minutes) }}</div>
+            <div class="alarm-ring-label">{{ ringing.label || '闹钟' }}</div>
+            <button class="alarm-ring-btn dismiss" @click="dismissRing">关闭</button>
+            <button class="alarm-ring-btn snooze" @click="snoozeRing">稍后 (5分钟)</button>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+        createApp({
+            setup() {
+                const tab = ref('clock');
+                const now = ref(new Date());
+                const is24Hour = ref(true);
+                const showSeconds = ref(true);
+                const isDark = ref(true);
+                const showSettings = ref(false);
+                const showAddAlarm = ref(false);
+                const showAddCity = ref(false);
+                const alarms = ref([]);
+                const newAlarmH = ref(7);
+                const newAlarmM = ref(0);
+                const newAlarmLabel = ref('');
+                const ringing = ref(null);
+                const worldCities = ref([{name:'东京',offset:9},{name:'伦敦',offset:0},{name:'纽约',offset:-5}]);
+                const availCities = ref([{name:'北京',offset:8},{name:'东京',offset:9},{name:'首尔',offset:9},{name:'新加坡',offset:8},{name:'伦敦',offset:0},{name:'巴黎',offset:1},{name:'纽约',offset:-5},{name:'洛杉矶',offset:-8},{name:'悉尼',offset:11},{name:'迪拜',offset:4}]);
+                const selectedCity = ref('');
+                const stopwatchTime = ref(0);
+                const swRunning = ref(false);
+                const lapRecords = ref([]);
+                const timerRem = ref(0);
+                const timerRunning = ref(false);
+                const timerInput = ref(25);
+                const pomoTime = ref(25*60);
+                const pomoRunning = ref(false);
+                const pomoCount = ref(0);
+                const todayPomos = ref(0);
+                const pomoSettings = ref({work:25,b:5,lb:15});
+                const pomoStatus = ref('工作中...');
+                let swInt = null, tmInt = null, pomoInt = null, tmInt2 = null;
+
+                const hourAngle = computed(() => (now.value.getHours() % 12 + now.value.getMinutes() / 60) * 30);
+                const minuteAngle = computed(() => (now.value.getMinutes() + now.value.getSeconds() / 60) * 6);
+                const secondAngle = computed(() => now.value.getSeconds() * 6);
+                const digitalTime = computed(() => {
+                    let h = now.value.getHours();
+                    let m = now.value.getMinutes();
+                    let s = now.value.getSeconds();
+                    if (!is24Hour.value) h = h % 12 || 12;
+                    let str = `${pad(h)}:${pad(m)}`;
+                    if (showSeconds.value) str += `:${pad(s)}`;
+                    return str;
+                });
+                const currentDate = computed(() => `${now.value.getFullYear()}年${pad(now.value.getMonth()+1)}月${pad(now.value.getDate())}日 ${['日','一','二','三','四','五','六'][now.value.getDay()]}`);
+
+                function pad(n) { return n.toString().padStart(2, '0'); }
+                function formatSW(t) {
+                    let ms = Math.floor(t % 100);
+                    let s = Math.floor(t / 100) % 60;
+                    let m = Math.floor(t / 6000) % 60;
+                    return `${pad(m)}:${pad(s)}.${pad(ms)}`;
+                }
+                function formatTM(t) {
+                    let m = Math.floor(t / 60) % 60;
+                    let s = t % 60;
+                    return `${pad(m)}:${pad(s)}`;
+                }
+                function getWorldTime(offset) {
+                    let d = new Date(now.value.getTime() + offset * 3600000);
+                    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                }
+
+                function toggleTheme() {
+                    isDark.value = !isDark.value;
+                    document.body.classList.toggle('light', !isDark.value);
+                    saveSettings();
+                }
+                function saveSettings() {
+                    localStorage.setItem('clock-settings', JSON.stringify({is24Hour: is24Hour.value, showSeconds: showSeconds.value, isDark: isDark.value, alarms: alarms.value}));
+                }
+                function loadSettings() {
+                    let s = JSON.parse(localStorage.getItem('clock-settings') || '{}');
+                    if (s.is24Hour !== undefined) is24Hour.value = s.is24Hour;
+                    if (s.showSeconds !== undefined) showSeconds.value = s.showSeconds;
+                    if (s.isDark !== undefined) { isDark.value = s.isDark; document.body.classList.toggle('light', !s.isDark); }
+                    if (s.alarms) alarms.value = s.alarms;
+                }
+                function toggleAlarm(idx) { alarms.value[idx].enabled = !alarms.value[idx].enabled; saveSettings(); }
+                function deleteAlarm(idx) { alarms.value.splice(idx, 1); saveSettings(); }
+                function addAlarm() {
+                    alarms.value.push({hours: newAlarmH.value, minutes: newAlarmM.value, label: newAlarmLabel.value, enabled: true});
+                    newAlarmLabel.value = '';
+                    showAddAlarm.value = false;
+                    saveSettings();
+                }
+                function addCity() {
+                    let c = availCities.value.find(x => x.name === selectedCity.value);
+                    if (c && !worldCities.value.find(x => x.name === c.name)) worldCities.value.push(c);
+                    selectedCity.value = '';
+                    showAddCity.value = false;
+                }
+                function dismissRing() { ringing.value = null; }
+                function snoozeRing() {
+                    setTimeout(() => { ringing.value = null; }, 300000);
+                    ringing.value = null;
+                }
+                function startSW() {
+                    swRunning.value = true;
+                    swInt = setInterval(() => { stopwatchTime.value++; }, 10);
+                }
+                function pauseSW() { swRunning.value = false; clearInterval(swInt); }
+                function resetSW() { pauseSW(); stopwatchTime.value = 0; lapRecords.value = []; }
+                function lapSW() {
+                    let t = stopwatchTime.value;
+                    let prev = lapRecords.value.length > 0 ? lapRecords.value[lapRecords.value.length-1].time : 0;
+                    lapRecords.value.push({time: t, diff: t - prev});
+                }
+                function setTM(m) { timerRem.value = m * 60; }
+                function startTM() {
+                    timerRunning.value = true;
+                    tmInt = setInterval(() => {
+                        if (timerRem.value > 0) timerRem.value--;
+                        else { pauseTM(); }
+                    }, 1000);
+                }
+                function pauseTM() { timerRunning.value = false; clearInterval(tmInt); }
+                function resetTM() { pauseTM(); timerRem.value = 0; }
+                function startPomo() {
+                    pomoRunning.value = true;
+                    pomoInt = setInterval(() => {
+                        if (pomoTime.value > 0) pomoTime.value--;
+                        else {
+                            if (pomoStatus.value === '工作中...') {
+                                todayPomos.value++;
+                                pomoCount.value = (pomoCount.value % 4) + 1;
+                                pomoStatus.value = '休息中...';
+                                pomoTime.value = pomoCount.value === 4 ? pomoSettings.value.lb * 60 : pomoSettings.value.b * 60;
+                            } else {
+                                pomoStatus.value = '工作中...';
+                                pomoTime.value = pomoSettings.value.work * 60;
+                            }
+                        }
+                    }, 1000);
+                }
+                function pausePomo() { pomoRunning.value = false; clearInterval(pomoInt); }
+                }
+                function resetPomo() { pausePomo(); pomoTime.value = pomoSettings.value.work * 60; pomoStatus.value = '工作中...'; pomoCount.value = 0; }
+
+                onMounted(() => {
+                    loadSettings();
+                    setInterval(() => { now.value = new Date(); }, 1000);
+                    setInterval(() => {
+                        alarms.value.forEach((a, i) => {
+                            if (a.enabled && a.hours === now.value.getHours() && a.minutes === now.value.getMinutes() && now.value.getSeconds() === 0) {
+                                ringing.value = a;
+                            }
+                        });
+                    }, 1000);
+                });
+
+                return {
+                    tab, now, is24Hour, showSeconds, isDark, showSettings,
+                    showAddAlarm, showAddCity, alarms, newAlarmH, newAlarmM, newAlarmLabel,
+                    ringing, worldCities, availCities, selectedCity,
+                    stopwatchTime, swRunning, lapRecords, timerRem, timerRunning, timerInput,
+                    pomoTime, pomoRunning, pomoCount, todayPomos, pomoSettings, pomoStatus,
+                    hourAngle, minuteAngle, secondAngle, digitalTime, currentDate,
+                    formatSW, formatTM, getWorldTime, toggleTheme, saveSettings,
+                    toggleAlarm, deleteAlarm, addAlarm, addCity, dismissRing, snoozeRing,
+                    startSW, pauseSW, resetSW, lapSW, setTM, startTM, pauseTM, resetTM,
+                    startPomo, pausePomo, resetPomo, pad
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
