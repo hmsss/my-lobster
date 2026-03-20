@@ -32,7 +32,6 @@
   },
   "lastUpdated": "2026-03-19T02:56:00+08:00",
   "rules": {
-    "progressPushInterval": 30,
     "statusCheckInterval": 300,
     "workingTimeout": 600
   }
