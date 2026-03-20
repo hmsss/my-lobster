@@ -19,17 +19,14 @@
 
 ### 1. 接收任务
 
-收到 CEO 任务后 **30 秒内必须确认**：
+收到 CEO 任务后**立即确认**：
 
 ```javascript
 await message({
   action: "send",
   channel: "feishu",
   target: "{群ID}",
-  message: `✅ [{角色}] 收到任务
-
-**任务**：{任务描述}
-**预计完成**：{时间}`
+  message: `收到任务，开始工作`
 });
 ```
 
@@ -43,20 +40,7 @@ jq '.agents."{agent-id}".status = "working"' /root/.openclaw/workspace/memory/ta
 
 ### 3. 进度汇报
 
-工作过程中每 **30 秒** 推送一次进度：
-
-```javascript
-await message({
-  action: "send",
-  channel: "feishu",
-  target: "{群ID}",
-  message: `🔄 [{角色}] 进度更新
-
-**已完成**：{xxx}
-**进行中**：{xxx}
-**下一步**：{xxx}`
-});
-```
+由 **watcher 统一监控** session 文件并推送进度，无需手动汇报。
 
 ### 4. 任务完成
 
