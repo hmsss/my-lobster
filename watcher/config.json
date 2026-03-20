@@ -1,88 +1,26 @@
-# watcher 配置更新
-
-## 新增：手动配置每个 agent 的推送目标
-
-### 当前配置
-```json
 {
-  "main": {
-    "type": "chat",
-    "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+  "enabled": true,
+  "throttleMs": 5000,
+  "agents": {
+    "include": [],
+    "exclude": []
   },
-  "product-manager": {
-    "type": "chat",
-    "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
-  },
-  "engineering-full-stack-developer": {
-    "type": "chat",
-    "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
-  },
-  "testing-senior-qa-engineer": {
-    "type": "chat",
-    "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+  "agentTargets": {
+    "main": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    },
+    "product-manager": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    },
+    "engineering-full-stack-developer": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    },
+    "testing-senior-qa-engineer": {
+      "type": "chat",
+      "id": "oc_ca8c8228db2c4628c5ab9715c7425896"
+    }
   }
 }
-```
-
-### 使用方式
-
-#### 设置推送目标
-
-```
-设置 {角色} 推送到 {群聊ID}
-```
-
-示例：
-```
-设置产品经理推送到 oc_xxx
-设置全栈工程师推送到 oc_xxx
-```
-
-#### 单独私聊
-
-```
-设置 {角色} 私聊 {用户ID}
-```
-
-示例
-```
-产品经理私聊 ou_xxx
-```
-
-#### 多人协作
-
-```
-协作任务 推送到 {群聊ID}
-```
-
-示例
-```
-开发坦克大战 推送到 oc_ca8c8228db2c4628c5ab9715c7425896
-```
-
-#### 查看状态
-
-```
-watcher 状态
-```
-
-#### 重载配置
-
-```
-重载 watcher 配置
-```
-
----
-
-## 代码位置
-
-`/root/.openclaw/workspace/watcher/config.json`
-
-## 提交到 GitHub
-
-```bash
-cd /root/.openclaw/workspace/my-lobster
-git add watcher/
-git commit -m "docs: update watcher config with manual targets"
-git push origin main
-```
