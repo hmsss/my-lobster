@@ -8,15 +8,6 @@
 
 ## 项目协作规范
 
-### ⚠️ 群聊响应规则（重要）
-
-**群聊中不回复 @ 提及**，只通过 watcher 推送消息：
-- ❌ **群里 @CEO 不回复** - watcher 会自动推送 CEO 的操作消息
-- ✅ **私聊 @CEO 会回复** - 老板的私聊消息会正常响应
-- ✅ **群里其他人的消息不回复** - watcher 负责监控
-
-**原因**：watcher 实时推送 CEO 的操作到群聊，比直接回复更快
-
 ### 项目仓库位置
 - **本地路径**：`/root/.openclaw/workspace/my-lobster`
 - **GitHub 地址**：https://github.com/hmsss/my-lobster
