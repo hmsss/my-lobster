@@ -464,8 +464,8 @@ function processSessionLine(agentId, line) {
 
     // 生成摘要
     const agentName = AGENT_NAMES[agentId] || agentId;
-    // 移除消息前缀 [xxx] 以及格式化符号
-    let summary = textContent.replace(/^\[.*?]\s*/, '').replace(/\*\*/g, '').replace(/`/g, '');
+    // 移除所有 [xxx] 前缀以及格式化符号
+    let summary = textContent.replace(/\[.*?]\s*/g, '').replace(/\*\*/g, '').replace(/`/g, '');
     
     // 跳过 ANNOUNCE_SKIP 消息
     if (summary.includes('ANNOUNCE_SKIP')) {
