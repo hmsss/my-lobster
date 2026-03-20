@@ -1,0 +1,11 @@
+{
+  "name": "task-watcher",
+  "description": "配合 watcher 服务，实现协作任务的通知精准推送。用于设置员工的群聊推送目标、查看 watcher 状态、测试推送和重载配置。",
+  "triggers": [
+    "设置推送目标",
+    "watcher 状态",
+    "重载配置",
+    "测试推送"
+  ],
+  "location": "/root/.openclaw/workspace/skills/task-watcher/SKILL.md"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "ceo-config",
+  "description": "CEO 配置管理 Skill。管理 watcher 推送目标、项目仓库配置等。触发词：设置推送目标、watcher 状态、重载配置、协作任务。",
+  "triggers": [
+    "设置推送目标",
+    "watcher 状态",
+    "重载配置",
+    "协作任务",
+    "清除推送目标"
+  ],
+  "location": "/root/.openclaw/workspace/skills/ceo-config/SKILL.md"
+}

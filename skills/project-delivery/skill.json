@@ -1,0 +1,11 @@
+{
+  "name": "project-delivery",
+  "description": "项目交付管理 Skill。统一管理项目产出物的提交和交付流程。员工完成任务后提交产出（本地 commit），CEO 验收通过后推送到远程仓库。",
+  "triggers": [
+    "提交产出",
+    "验收交付",
+    "项目状态",
+    "推送仓库"
+  ],
+  "location": "/root/.openclaw/workspace/skills/project-delivery/SKILL.md"
+}
