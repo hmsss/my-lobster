@@ -431,12 +431,6 @@ function processSessionLine(agentId, line) {
     // 如果超过 5 分钟没有活动，认为是新任务
     if (!runId || timeSinceLast > 5 * 60 * 1000) {
       runId = `run-${Date.now()}`;
-      
-      // 新任务开始
-      if (shouldProcessAgent(agentId)) {
-        const agentName = AGENT_NAMES[agentId] || agentId;
-        sendFeishuMessage(agentId, `开始处理新任务`);
-      }
     }
 
     agentLastActivity.set(agentId, {
@@ -444,19 +438,6 @@ function processSessionLine(agentId, line) {
       lastTime: now,
       runId
     });
-
-    // 检测任务完成
-    const completionKeywords = ['完成', '已完成', '任务完成', 'done', 'finished', 'completed'];
-    const isComplete = completionKeywords.some(kw => textContent.toLowerCase().includes(kw));
-
-    if (isComplete) {
-      if (shouldProcessAgent(agentId)) {
-        const agentName = AGENT_NAMES[agentId] || agentId;
-        sendFeishuMessage(agentId, `任务完成`);
-      }
-      agentLastActivity.delete(agentId);
-      return;
-    }
 
     // 节流 + 推送进度
     if (shouldThrottle(agentId)) return;
