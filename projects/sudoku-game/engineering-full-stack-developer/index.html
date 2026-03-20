@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数独游戏</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .app { max-width: 500px; width: 100%; }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 2rem; margin-bottom: 5px; }
+        .header .stats { font-size: 0.9rem; opacity: 0.9; }
+        
+        /* Game Container */
+        .game-container {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        /* Menu */
+        .menu { text-align: center; }
+        .menu h2 { font-size: 1.5rem; margin-bottom: 20px; color: #333; }
+        .menu-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .menu-btn.primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .menu-btn.secondary { background: #f0f0f0; color: #333; }
+        .menu-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        
+        /* Difficulty */
+        .difficulty-select h3 { margin-bottom: 15px; color: #333; }
+        .difficulty-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .difficulty-btn:hover { border-color: #667eea; background: #f8f9ff; }
+        .difficulty-btn .name { font-weight: bold; color: #333; }
+        .difficulty-btn .info { font-size: 0.85rem; color: #666; }
+        
+        /* Game Info */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .game-info .timer { font-size: 1.5rem; font-weight: bold; color: #333; }
+        .game-info .meta { font-size: 0.85rem; color: #666; }
+        
+        /* Sudoku Board */
+        .sudoku-board {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 1px;
+            background: #333;
+            border: 3px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        .sudoku-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            font-size: 1.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+            position: relative;
+        }
+        .sudoku-cell.given { color: #333; font-weight: 700; }
+        .sudoku-cell.user { color: #1976d2; }
+        .sudoku-cell.error { color: #f44336; background: #ffebee; }
+        .sudoku-cell.selected { background: #e3f2fd; }
+        .sudoku-cell.highlighted { background: #fff9c4; }
+        .sudoku-cell.same-value { background: #f0f4ff; }
+        
+        /* 3x3 box borders */
+        .sudoku-cell:nth-child(3n) { border-right: 2px solid #333; }
+        .sudoku-cell:nth-child(9n) { border-right: none; }
+        .sudoku-cell:nth-child(n+19):nth-child(-n+27),
+        .sudoku-cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid #333; }
+        
+        /* Notes */
+        .notes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            padding: 2px;
+        }
+        .note-num {
+            font-size: 0.5rem;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Number Pad */
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .num-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .num-btn:hover { background: #f0f0f0; }
+        .num-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: #f0f0f0;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .ctrl-btn:hover { background: #e0e0e0; }
+        .ctrl-btn.active { background: #667eea; color: white; }
+        
+        /* Pause Overlay */
+        .pause-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .pause-content {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .pause-content h2 { margin-bottom: 20px; }
+        
+        /* Complete Modal */
+        .complete-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .complete-content {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 350px;
+        }
+        .complete-content h2 { color: #4caf50; margin-bottom: 15px; }
+        .complete-content .stats { margin: 20px 0; }
+        .complete-content .stat-item { margin: 8px 0; color: #666; }
+        
+        /* Progress Bar */
+        .progress-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, onUnmounted, watch } = Vue;
+
+        // 数独生成器
+        const SudokuGenerator = {
+            // 生成完整解
+            generateSolution() {
+                const board = Array(9).fill(null).map(() => Array(9).fill(0));
+                this.fillBoard(board);
+                return board;
+            },
+
+            // 回溯填充
+            fillBoard(board, row = 0, col = 0) {
+                if (row === 9) return true;
+                if (col === 9) return this.fillBoard(board, row + 1, 0);
+                if (board[row][col] !== 0) return this.fillBoard(board, row, col + 1);
+
+                const numbers = this.shuffle([1,2,3,4,5,6,7,8,9]);
+                for (const num of numbers) {
+                    if (this.isValid(board, row, col, num)) {
+                        board[row][col] = num;
+                        if (this.fillBoard(board, row, col + 1)) return true;
+                        board[row][col] = 0;
+                    }
+                }
+                return false;
+            },
+
+            // 验证数字
+            isValid(board, row, col, num) {
+                // 检查行
+                if (board[row].includes(num)) return false;
+                // 检查列
+                if (board.some(r => r[col] === num)) return false;
+                // 检查3x3宫
+                const boxRow = Math.floor(row / 3) * 3;
+                const boxCol = Math.floor(col / 3) * 3;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        if (board[boxRow + i][boxCol + j] === num) return false;
+                    }
+                }
+                return true;
+            },
+
+            // 打乱数组
+            shuffle(arr) {
+                const result = [...arr];
+                for (let i = result.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [result[i], result[j]] = [result[j], result[i]];
+                }
+                return result;
+            },
+
+            // 创建谜题
+            createPuzzle(solution, difficulty) {
+                const puzzle = solution.map(row => [...row]);
+                const cellsToRemove = {
+                    easy: 40 + Math.floor(Math.random() * 10),
+                    medium: 46 + Math.floor(Math.random() * 6),
+                    hard: 52 + Math.floor(Math.random() * 5),
+                    expert: 57 + Math.floor(Math.random() * 8)
+                }[difficulty];
+
+                const positions = [];
+                for (let i = 0; i < 81; i++) positions.push(i);
+                this.shuffle(positions);
+
+                let removed = 0;
+                for (const pos of positions) {
+                    if (removed >= cellsToRemove) break;
+                    const row = Math.floor(pos / 9);
+                    const col = pos % 9;
+                    puzzle[row][col] = 0;
+                    removed++;
+                }
+
+                return puzzle;
+            }
+        };
+
+        // 格式化时间
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        createApp({
+            setup() {
+                // 状态
+                const view = ref('menu'); // menu, difficulty, game
+                const difficulty = ref('medium');
+                const board = ref([]);
+                const solution = ref([]);
+                const selectedCell = ref(null);
+                const timer = ref(0);
+                const isPaused = ref(false);
+                const isCompleted = ref(false);
+                const isNoteMode = ref(false);
+                const hintsUsed = ref(0);
+                const maxHints = 3;
+                const validateMode = ref(true);
+                const history = ref([]);
+                const historyIndex = ref(-1);
+                const stats = ref({ completed: 0, bestTimes: {} });
+
+                let timerInterval = null;
+
+                // 难度名称
+                const difficultyNames = {
+                    easy: '简单',
+                    medium: '中等',
+                    hard: '困难',
+                    expert: '专家'
+                };
+
+                // 计算进度
+                const progress = computed(() => {
+                    if (!board.value.length) return 0;
+                    let filled = 0;
+                    let total = 0;
+                    board.value.forEach(row => {
+                        row.forEach(cell => {
+                            if (!cell.given) {
+                                total++;
+                                if (cell.value !== 0) filled++;
+                            }
+                        });
+                    });
+                    return total > 0 ? Math.round((filled / total) * 100) : 0;
+                });
+
+                // 初始化游戏
+                function startGame(diff) {
+                    difficulty.value = diff;
+                    const sol = SudokuGenerator.generateSolution();
+                    const puzzle = SudokuGenerator.createPuzzle(sol, diff);
+
+                    solution.value = sol;
+                    board.value = puzzle.map((row, r) => 
+                        row.map((val, c) => ({
+                            value: val,
+                            solution: sol[r][c],
+                            given: val !== 0,
+                            notes: [],
+                            error: false
+                        }))
+                    );
+
+                    selectedCell.value = null;
+                    timer.value = 0;
+                    isPaused.value = false;
+                    isCompleted.value = false;
+                    hintsUsed.value = 0;
+                    history.value = [];
+                    historyIndex.value = -1;
+                    view.value = 'game';
+
+                    // 开始计时
+                    if (timerInterval) clearInterval(timerInterval);
+                    timerInterval = setInterval(() => {
+                        if (!isPaused.value && !isCompleted.value) {
+                            timer.value++;
+                        }
+                    }, 1000);
+                }
+
+                // 选择格子
+                function selectCell(row, col) {
+                    if (board.value[row][col].given) return;
+                    selectedCell.value = { row, col };
+                }
+
+                // 输入数字
+                function inputNumber(num) {
+                    if (!selectedCell.value || isPaused.value || isCompleted.value) return;
+                    const { row, col } = selectedCell.value;
+                    const cell = board.value[row][col];
+                    if (cell.given) return;
+
+                    // 保存历史
+                    saveHistory(row, col, cell.value, cell.notes);
+
+                    if (isNoteMode.value) {
+                        // 笔记模式
+                        const idx = cell.notes.indexOf(num);
+                        if (idx === -1) {
+                            cell.notes.push(num);
+                            cell.notes.sort();
+                        } else {
+                            cell.notes.splice(idx, 1);
+                        }
+                    } else {
+                        // 正常模式
+                        cell.value = num;
+                        cell.notes = [];
+                        cell.error = validateMode.value && num !== cell.solution;
+                    }
+
+                    // 检查完成
+                    checkCompletion();
+                    saveGame();
+                }
+
+                // 清除格子
+                function clearCell() {
+                    if (!selectedCell.value || isPaused.value || isCompleted.value) return;
+                    const { row, col } = selectedCell.value;
+                    const cell = board.value[row][col];
+                    if (cell.given) return;
+
+                    saveHistory(row, col, cell.value, cell.notes);
+                    cell.value = 0;
+                    cell.notes = [];
+                    cell.error = false;
+                    saveGame();
+                }
+
+                // 保存历史
+                function saveHistory(row, col, oldValue, oldNotes) {
+                    history.value = history.value.slice(0, historyIndex.value + 1);
+                    history.value.push({ row, col, oldValue, oldNotes });
+                    historyIndex.value = history.value.length - 1;
+                    if (history.value.length > 50) {
+                        history.value.shift();
+                        historyIndex.value--;
+                    }
+                }
+
+                // 撤销
+                function undo() {
+                    if (historyIndex.value < 0) return;
+                    const entry = history.value[historyIndex.value];
+                    const cell = board.value[entry.row][entry.col];
+                    cell.value = entry.oldValue;
+                    cell.notes = entry.oldNotes;
+                    cell.error = validateMode.value && entry.oldValue !== 0 && entry.oldValue !== cell.solution;
+                    historyIndex.value--;
+                    saveGame();
+                }
+
+                // 重做
+                function redo() {
+                    if (historyIndex.value >= history.value.length - 1) return;
+                    historyIndex.value++;
+                    const entry = history.value[historyIndex.value];
+                    // 重做需要保存新值，这里简化处理
+                }
+
+                // 提示
+                function useHint() {
+                    if (hintsUsed.value >= maxHints || isCompleted.value) return;
+                    
+                    // 找一个空格填入正确答案
+                    const emptyCells = [];
+                    board.value.forEach((row, r) => {
+                        row.forEach((cell, c) => {
+                            if (!cell.given && cell.value === 0) {
+                                emptyCells.push({ row: r, col: c });
+                            }
+                        });
+                    });
+
+                    if (emptyCells.length === 0) return;
+
+                    const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    const cell = board.value[randomCell.row][randomCell.col];
+                    cell.value = cell.solution;
+                    cell.notes = [];
+                    cell.error = false;
+                    hintsUsed.value++;
+                    timer.value += 30; // 时间惩罚
+
+                    checkCompletion();
+                    saveGame();
+                }
+
+                // 检查完成
+                function checkCompletion() {
+                    for (let r = 0; r < 9; r++) {
+                        for (let c = 0; c < 9; c++) {
+                            if (board.value[r][c].value !== board.value[r][c].solution) {
+                                return;
+                            }
+                        }
+                    }
+                    isCompleted.value = true;
+                    if (timerInterval) clearInterval(timerInterval);
+                    
+                    // 更新统计
+                    stats.value.completed++;
+                    if (!stats.value.bestTimes[difficulty.value] || timer.value < stats.value.bestTimes[difficulty.value]) {
+                        stats.value.bestTimes[difficulty.value] = timer.value;
+                    }
+                    saveStats();
+                    clearSavedGame();
+                }
+
+                // 暂停/继续
+                function togglePause() {
+                    isPaused.value = !isPaused.value;
+                }
+
+                // 保存游戏
+                function saveGame() {
+                    const data = {
+                        board: board.value,
+                        solution: solution.value,
+                        difficulty: difficulty.value,
+                        timer: timer.value,
+                        hintsUsed: hintsUsed.value,
+                        history: history.value,
+                        historyIndex: historyIndex.value
+                    };
+                    localStorage.setItem('sudoku-game', JSON.stringify(data));
+                }
+
+                // 加载游戏
+                function loadGame() {
+                    const data = localStorage.getItem('sudoku-game');
+                    if (data) {
+                        try {
+                            const parsed = JSON.parse(data);
+                            board.value = parsed.board;
+                            solution.value = parsed.solution;
+                            difficulty.value = parsed.difficulty;
+                            timer.value = parsed.timer;
+                            hintsUsed.value = parsed.hintsUsed;
+                            history.value = parsed.history || [];
+                            historyIndex.value = parsed.historyIndex || -1;
+                            view.value = 'game';
+
+                            timerInterval = setInterval(() => {
+                                if (!isPaused.value && !isCompleted.value) {
+                                    timer.value++;
+                                }
+                            }, 1000);
+                            return true;
+                        } catch (e) {}
+                    }
+                    return false;
+                }
+
+                // 清除保存的游戏
+                function clearSavedGame() {
+                    localStorage.removeItem('sudoku-game');
+                }
+
+                // 保存统计
+                function saveStats() {
+                    localStorage.setItem('sudoku-stats', JSON.stringify(stats.value));
+                }
+
+                // 加载统计
+                function loadStats() {
+                    const data = localStorage.getItem('sudoku-stats');
+                    if (data) {
+                        try {
+                            stats.value = JSON.parse(data);
+                        } catch (e) {}
+                    }
+                }
+
+                // 返回菜单
+                function backToMenu() {
+                    if (timerInterval) clearInterval(timerInterval);
+                    view.value = 'menu';
+                }
+
+                // 键盘事件
+                function handleKeydown(e) {
+                    if (view.value !== 'game' || isPaused.value) return;
+
+                    if (e.key >= '1' && e.key <= '9') {
+                        inputNumber(parseInt(e.key));
+                    } else if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') {
+                        clearCell();
+                    } else if (e.key === 'n' || e.key === 'N') {
+                        isNoteMode.value = !isNoteMode.value;
+                    } else if (e.key === 'z' && e.ctrlKey) {
+                        undo();
+                    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        if (!selectedCell.value) {
+                            selectedCell.value = { row: 0, col: 0 };
+                            return;
+                        }
+                        let { row, col } = selectedCell.value;
+                        if (e.key === 'ArrowUp') row = Math.max(0, row - 1);
+                        if (e.key === 'ArrowDown') row = Math.min(8, row + 1);
+                        if (e.key === 'ArrowLeft') col = Math.max(0, col - 1);
+                        if (e.key === 'ArrowRight') col = Math.min(8, col + 1);
+                        selectedCell.value = { row, col };
+                    }
+                }
+
+                // 是否高亮相同数字
+                function isHighlighted(row, col) {
+                    if (!selectedCell.value) return false;
+                    const selected = board.value[selectedCell.value.row][selectedCell.value.col];
+                    if (selected.value === 0) return false;
+                    return board.value[row][col].value === selected.value;
+                }
+
+                onMounted(() => {
+                    loadStats();
+                    window.addEventListener('keydown', handleKeydown);
+                });
+
+                onUnmounted(() => {
+                    window.removeEventListener('keydown', handleKeydown);
+                    if (timerInterval) clearInterval(timerInterval);
+                });
+
+                return {
+                    view,
+                    difficulty,
+                    board,
+                    selectedCell,
+                    timer,
+                    isPaused,
+                    isCompleted,
+                    isNoteMode,
+                    hintsUsed,
+                    maxHints,
+                    validateMode,
+                    progress,
+                    stats,
+                    difficultyNames,
+                    formatTime,
+                    startGame,
+                    selectCell,
+                    inputNumber,
+                    clearCell,
+                    undo,
+                    redo,
+                    useHint,
+                    togglePause,
+                    loadGame,
+                    backToMenu,
+                    isHighlighted
+                };
+            },
+            template: `
+                <div class="app">
+                    <!-- Header -->
+                    <div class="header">
+                        <h1>🎯 数独</h1>
+                        <div class="stats" v-if="stats.completed > 0">
+                            已完成 {{ stats.completed }} 局
+                        </div>
+                    </div>
+
+                    <div class="game-container">
+                        <!-- Menu -->
+                        <div v-if="view === 'menu'" class="menu">
+                            <h2>选择操作</h2>
+                            <button class="menu-btn primary" @click="view = 'difficulty'">
+                                新游戏
+                            </button>
+                            <button class="menu-btn secondary" @click="loadGame(); view = 'game'" v-if="loadGame()">
+                                继续游戏
+                            </button>
+                        </div>
+
+                        <!-- Difficulty Select -->
+                        <div v-if="view === 'difficulty'" class="difficulty-select">
+                            <h3>选择难度</h3>
+                            <button class="difficulty-btn" @click="startGame('easy')">
+                                <div class="name">😊 简单</div>
+                                <div class="info">提示数 36-45 | 平均 5-10 分钟</div>
+                            </button>
+                            <button class="difficulty-btn" @click="startGame('medium')">
+                                <div class="name">🙂 中等</div>
+                                <div class="info">提示数 30-35 | 平均 10-20 分钟</div>
+                            </button>
+                            <button class="difficulty-btn" @click="startGame('hard')">
+                                <div class="name">😤 困难</div>
+                                <div class="info">提示数 25-29 | 平均 20-40 分钟</div>
+                            </button>
+                            <button class="difficulty-btn" @click="startGame('expert')">
+                                <div class="name">🤯 专家</div>
+                                <div class="info">提示数 17-24 | 平均 40+ 分钟</div>
+                            </button>
+                            <button class="menu-btn secondary" @click="view = 'menu'" style="margin-top: 15px;">
+                                返回
+                            </button>
+                        </div>
+
+                        <!-- Game -->
+                        <div v-if="view === 'game'">
+                            <!-- Game Info -->
+                            <div class="game-info">
+                                <div class="timer">⏱️ {{ formatTime(timer) }}</div>
+                                <div class="meta">
+                                    {{ difficultyNames[difficulty] }} | 提示: {{ hintsUsed }}/{{ maxHints }}
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+                            </div>
+
+                            <!-- Sudoku Board -->
+                            <div class="sudoku-board">
+                                <div v-for="(row, r) in board" :key="r" style="display: contents;">
+                                    <div v-for="(cell, c) in row" :key="c"
+                                         class="sudoku-cell"
+                                         :class="{
+                                             given: cell.given,
+                                             user: !cell.given && cell.value !== 0,
+                                             error: cell.error,
+                                             selected: selectedCell && selectedCell.row === r && selectedCell.col === c,
+                                             'same-value': isHighlighted(r, c)
+                                         }"
+                                         @click="selectCell(r, c)">
+                                        <template v-if="cell.value !== 0">
+                                            {{ cell.value }}
+                                        </template>
+                                        <template v-else-if="cell.notes.length > 0">
+                                            <div class="notes">
+                                                <div v-for="n in 9" :key="n" class="note-num">
+                                                    {{ cell.notes.includes(n) ? n : '' }}
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Number Pad -->
+                            <div class="number-pad">
+                                <button v-for="n in 9" :key="n" class="num-btn" @click="inputNumber(n)">
+                                    {{ n }}
+                                </button>
+                                <button class="num-btn" @click="clearCell">⌫</button>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="controls">
+                                <button class="ctrl-btn" @click="undo">撤销</button>
+                                <button class="ctrl-btn" @click="isNoteMode = !isNoteMode" :class="{ active: isNoteMode }">
+                                    笔记
+                                </button>
+                                <button class="ctrl-btn" @click="useHint" :disabled="hintsUsed >= maxHints">
+                                    提示
+                                </button>
+                                <button class="ctrl-btn" @click="togglePause">暂停</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pause Overlay -->
+                    <div v-if="isPaused" class="pause-overlay" @click.self="togglePause">
+                        <div class="pause-content">
+                            <h2>⏸️ 游戏暂停</h2>
+                            <button class="menu-btn primary" @click="togglePause">继续游戏</button>
+                            <button class="menu-btn secondary" @click="backToMenu">返回菜单</button>
+                        </div>
+                    </div>
+
+                    <!-- Complete Modal -->
+                    <div v-if="isCompleted" class="complete-modal">
+                        <div class="complete-content">
+                            <h2>🎉 恭喜完成！</h2>
+                            <div class="stats">
+                                <div class="stat-item">⏱️ 用时: {{ formatTime(timer) }}</div>
+                                <div class="stat-item">💡 提示: {{ hintsUsed }} 次</div>
+                                <div class="stat-item">📊 难度: {{ difficultyNames[difficulty] }}</div>
+                            </div>
+                            <button class="menu-btn primary" @click="view = 'difficulty'">再来一局</button>
+                            <button class="menu-btn secondary" @click="backToMenu">返回菜单</button>
+                        </div>
+                    </div>
+                </div>
+            `
+        }).mount('#app');
+    </script>
+</body>
+</html>
