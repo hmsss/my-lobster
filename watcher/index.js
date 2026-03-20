@@ -466,6 +466,12 @@ function processSessionLine(agentId, line) {
     const agentName = AGENT_NAMES[agentId] || agentId;
     // 移除消息前缀 [xxx] 以及格式化符号
     let summary = textContent.replace(/^\[.*?]\s*/, '').replace(/\*\*/g, '').replace(/`/g, '');
+    
+    // 跳过 ANNOUNCE_SKIP 消息
+    if (summary.includes('ANNOUNCE_SKIP')) {
+      return;
+    }
+    
     if (summary.length > 100) {
       summary = summary.substring(0, 100) + '...';
     }
