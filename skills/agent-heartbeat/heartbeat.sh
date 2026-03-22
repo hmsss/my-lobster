@@ -1,47 +1,67 @@
 #!/bin/bash
-# agent-heartbeat/heartbeat.sh
+# heartbeat.sh - Bash版心跳脚本（备选，兼容性更好）
 # 用法: ./heartbeat.sh <BotAppId> <BotAppSecret> <chatId> <agentName> [working_msg]
-# 每10秒发送一次心跳，失败自动重试，PID写入heartbeat.pid便于终止
 
-BOT_APP_ID="$1"
-BOT_APP_SECRET="$2"
+APP_ID="$1"
+BOT_SECRET="$2"
 CHAT_ID="$3"
 AGENT_NAME="$4"
-WORKING_MSG="${5:-工作中}"
-PID_FILE="/tmp/heartbeat-$$.pid"
+shift 4
+WORKING_MSG="${*:-工作中}"
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SEND_BOT="$SCRIPT_DIR/../novel-writing-command/send-as-bot.js"
+PID_FILE="/tmp/heartbeat-${AGENT_NAME}.pid"
+LOG_FILE="/tmp/heartbeat-${AGENT_NAME}.log"
+HEARTBEAT_URL="https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id"
+TOKEN_URL="https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
 
-# 写入PID文件
+if [ -z "$APP_ID" ] || [ -z "$BOT_SECRET" ] || [ -z "$CHAT_ID" ] || [ -z "$AGENT_NAME" ]; then
+  echo "用法: heartbeat.sh <AppId> <BotSecret> <chatId> <agentName> [working_msg]"
+  exit 1
+fi
+
+# 写入PID
 echo $$ > "$PID_FILE"
 
-# 设置信号捕获，收到TERM/SIGINT时删除PID文件并退出
+# 清理函数
 cleanup() {
   rm -f "$PID_FILE"
   exit 0
 }
 trap cleanup SIGTERM SIGINT EXIT
 
-# 心跳计数器
-beat=0
-max_retries=3
-retry_delay=2
+# 获取token
+get_token() {
+  RESPONSE=$(curl -s -X POST "$TOKEN_URL" \
+    -H "Content-Type: application/json" \
+    -d "{\"app_id\":\"$APP_ID\",\"app_secret\":\"$BOT_SECRET\"}")
+  echo "$RESPONSE" | grep -o '"tenant_access_token":"[^"]*"' | cut -d'"' -f4
+}
 
+# 发送心跳
+send_beat() {
+  local count=$1
+  local msg="【${AGENT_NAME}】${WORKING_MSG}... (${count})"
+  
+  TOKEN=$(get_token)
+  if [ -z "$TOKEN" ]; then
+    echo "[$AGENT_NAME] 获取token失败"
+    return 1
+  fi
+
+  curl -s -X POST "$HEARTBEAT_URL" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d "{\"receive_id\":\"$CHAT_ID\",\"msg_type\":\"text\",\"content\":{\"text\":\"$msg\"}}" > /dev/null
+    
+  echo "[$AGENT_NAME] 心跳 #$count 发送成功"
+}
+
+# 主循环
+echo "[$AGENT_NAME] 心跳启动，每10秒一次，PID: $$"
+count=0
 while true; do
-  msg="【${AGENT_NAME}】${WORKING_MSG}... (${beat})"
-  
-  # 尝试发送，重试max_retries次
-  for attempt in $(seq 1 $max_retries); do
-    result=$(node "$SEND_BOT" "$BOT_APP_ID" "$BOT_APP_SECRET" "$CHAT_ID" "$msg" 2>&1)
-    if echo "$result" | grep -q "SUCCESS"; then
-      break
-    fi
-    if [ $attempt -lt $max_retries ]; then
-      sleep $retry_delay
-    fi
-  done
-  
-  beat=$((beat + 1))
-  sleep 10
+  send_beat $count
+  count=$((count + 1))
+  sleep 10 &
+  wait $!
 done

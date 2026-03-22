@@ -8,6 +8,8 @@
 - 2026-03-22 公司初始化完成
 - 工作群：oc_ca8c8228db2c4628c5ab9715c7425896
 - 共享工作空间：shared/workspace-novel/
+- 当前进度：《十二祖巫都是我弟子》章纲生成中（叙事架构师执行）
+- 新书目录：/root/.openclaw/workspace/shared/twelve-ancestors/
 
 ## 在岗员工快照
 - CEO（主 Agent）：active
