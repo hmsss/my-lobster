@@ -7,7 +7,7 @@
 | Agent ID | 角色 | 类型 | 飞书 Bot | 擅长领域 | 状态 |
 |----------|------|------|---------|---------|------|
 | (CEO) | 总指挥官 | permanent | 主 Agent | 任务分析、人员调度、团队管理 | active |
-| content-planner | 内容策划 | sub-agent | — | 热门小说题材分析、大纲拟定 | active |
+| content-planner | 内容策划 | permanent | cli_a92319273c78dcca | 热门小说题材分析、大纲拟定 | active |
 
 ## 协作群
 

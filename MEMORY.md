@@ -15,3 +15,4 @@
 
 ## 教训
 - `openclaw skills run feishu-bot-manager` 不支持 `--app-id` 等部署参数，部署 Agent 需手动编辑 openclaw.json（详见 feishu-bot-manager SKILL.md Phase 5）
+- 招聘的 Agent 应为独立 Agent（写 openclaw.json agents.list），不是 sub-agent
