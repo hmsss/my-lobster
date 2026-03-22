@@ -31,11 +31,11 @@ invocations:
 ↓
 CEO 接收 → 理解需求 → 拆解分配
 ↓
-员工 A 执行（章纲策划）→ CEO 审核
+员工 A 执行 → CEO 审核
     ├─ 不通过 → 打回 A 重做（带修改方向）→ 循环
     └─ 通过
 ↓
-员工 B 执行（正文生成）→ CEO 最终审核
+员工 B 执行（优化/补全）→ CEO 最终审核
     ├─ 不通过 → ❗回退 A 重做 → A完成后 → CEO重审 → B继续
     └─ 通过 → 任务完成
 ↓
@@ -53,9 +53,13 @@ CEO 向老板汇报最终产物
 
 ---
 
-## 📢 播报规范（工作群 ID：oc_ca8c8228db2c4628c5ab9715c7425896）
+## 📢 播报规范
 
-### CEO 播报规范
+**工作群 ID：** `oc_ca8c8228db2c4628c5ab9715c7425896`
+
+---
+
+### CEO 播报
 
 #### 1️⃣ 接收任务后
 
@@ -119,7 +123,7 @@ CEO 向老板汇报最终产物
 
 ---
 
-### 👨‍💻 员工 A 播报规范（章纲策划）
+### 👨‍💻 员工 A 播报（narrative-designer）
 
 #### 1️⃣ 接收任务
 
@@ -154,7 +158,7 @@ CEO 向老板汇报最终产物
 
 ---
 
-### 🧪 员工 B 播报规范（正文生成）
+### 🧪 员工 B 播报（novel-writer）
 
 #### 1️⃣ 接收任务
 
@@ -201,6 +205,90 @@ CEO 向老板汇报最终产物
 
 ---
 
+## ⚠️ 员工 sub-agent 任务模板（spawn 时使用）
+
+spawn sub-agent 时，task 内容必须包含以下播报指令，**不得删减**：
+
+### A类任务模板（narrative-designer）
+
+```
+## 任务：{具体任务}
+
+## 执行要求
+
+### 第一步：接收任务后立即发送群播报
+使用 feishu_im_user_message 工具，以用户身份发送：
+- receive_id_type: chat_id
+- receive_id: oc_ca8c8228db2c4628c5ab9715c7425896
+- msg_type: text
+- content: {"text": "【员工A - narrative-designer】\n已接收CEO任务 ✅\n任务内容：{任务描述}\n开始执行"}
+
+### 第二步：执行过程中发送进度播报（每完成一个子任务发送一次）
+发送格式：
+- receive_id_type: chat_id
+- receive_id: oc_ca8c8228db2c4628c5ab9715c7425896
+- msg_type: text
+- content: {"text": "【员工A进度】\n当前步骤：{当前步骤}\n已完成：{已完成}\n下一步：{下一步}"}
+
+### 第三步：全部完成后
+1. 将成果写入：/root/.openclaw/workspace/shared/workspace-novel/{对应文件}
+2. 发送完成播报：
+- receive_id_type: chat_id
+- receive_id: oc_ca8c8228db2c4628c5ab9715c7425896
+- msg_type: text
+- content: {"text": "【员工A完成】\n执行已完成 ✅\n\n成果：\n- {交付物1}\n- {交付物2}\n\n请求CEO审核"}
+3. 通过 feishu_im_user_message 向 CEO（韩猛，open_id: ou_5c1427fa290cd1f4ba3c5b24085a7a77）发送完成通知
+
+## 输出路径
+- {具体文件路径}
+
+## 禁止事项
+- 不得跳过群内播报
+- 不得直接与 novel-writer 沟通
+- 不得在群里发送与任务无关的内容
+```
+
+### B类任务模板（novel-writer）
+
+```
+## 任务：{具体任务}
+
+## 执行要求
+
+### 第一步：接收任务后立即发送群播报
+使用 feishu_im_user_message 工具，以用户身份发送：
+- receive_id_type: chat_id
+- receive_id: oc_ca8c8228db2c4628c5ab9715c7425896
+- msg_type: text
+- content: {"text": "【员工B - novel-writer】\n已接收优化任务 ✅\n目标：在A基础上优化/补全 xxx\n开始执行"}
+
+### 第二步：执行过程中发送进度播报
+发送格式：
+- receive_id_type: chat_id
+- receive_id: oc_ca8c8228db2c4628c5ab9715c7425896
+- msg_type: text
+- content: {"text": "【员工B进度】\n优化点：{当前优化内容}\n当前进展：{进展}\n下一步：{下一步}"}
+
+### 第三步：完成后
+1. 将成果写入：/root/.openclaw/workspace/shared/workspace-novel/{对应文件}
+2. 发送完成播报：
+- receive_id_type: chat_id
+- receive_id: oc_ca8c8228db2c4628c5ab9715c7425896
+- msg_type: text
+- content: {"text": "【员工B完成】\n优化完成 ✅\n\n优化内容：\n- {优化点1}\n- {优化点2}\n\n请求CEO最终审核"}
+3. 通过 feishu_im_user_message 向 CEO（韩猛，open_id: ou_5c1427fa290cd1f4ba3c5b24085a7a77）发送完成通知
+
+## 输出路径
+{具体文件路径}
+
+## 禁止事项
+- 不得跳过群内播报
+- 不得修改 A 的原始策划案（如需修改，向 CEO 报告）
+- 不得在群里发送与任务无关的内容
+```
+
+---
+
 ## 📁 共享工作空间
 
 **根目录：** `/root/.openclaw/workspace/shared/workspace-novel/`
@@ -208,7 +296,7 @@ CEO 向老板汇报最终产物
 ```
 shared/workspace-novel/
   MEMORY.md              # 项目整体记忆
-  progress.md            # 总进度追踪（CEO 更新）
+  progress.md            # 总进度追踪
   worldguide.md          # 世界观设定
   character-sheet.md      # 人物卡
   foreshadowing-map.md    # 伏笔地图
