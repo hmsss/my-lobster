@@ -1,6 +1,6 @@
 ---
 name: novel-writing-command
-description: 多Agent小说写作工作流。CEO调度+双阶段执行+实时播报，每个角色播报自己的状态，禁止静默执行。员工通过 Bot API 脚本自我播报。
+description: 多Agent小说写作工作流。CEO调度+双阶段执行+实时播报，每个角色用自己的中文名播报，禁止静默执行。
 invocations:
   - words:
       - 开始写小说
@@ -12,30 +12,42 @@ invocations:
 
 # novel-writing-command
 
-## 核心原则
+## 角色中文名
 
-**三层隔离：**
-- 老板（韩猛） ↔ CEO（我）：任务下达 / 成果汇报
-- CEO ↔ 员工：通过飞书消息分配任务，不直接沟通
-- 员工之间：**不直接沟通**
-
-**🚨 强制规则：禁止静默执行。每个角色播报自己的状态。**
+| ID | 中文名 | Bot ID | 职责 |
+|----|--------|--------|------|
+| CEO | CEO（总指挥） | cli_a9203635d139dbcd | 调度+审核+决策 |
+| content-planner | 内容策划 | cli_a92319273c78dcca | 题材研究 |
+| narrative-designer | 叙事架构师 | cli_a927295acd38dcee | 世界观/章纲/人物 |
+| novel-writer | 写手 | cli_a92317d3d5785cb6 | 正文批量生成 |
 
 ---
 
-## 📌 总体流程
+## 播报名格式
+
+所有播报统一使用中文名：
+- 【CEO（总指挥）】
+- 【内容策划】
+- 【叙事架构师】
+- 【写手】
+
+**禁止使用：员工A / 员工B / 角色ID**
+
+---
+
+## 标准工作流
 
 ```
 老板下达任务
 ↓
 CEO 接收 → 理解需求 → 拆解分配
 ↓
-员工 A 执行（自我播报）→ CEO 审核
-    ├─ 不通过 → 打回 A 重做 → A 自我播报修改进度
+叙事架构师 执行（自我播报）→ CEO 审核
+    ├─ 不通过 → 打回重做 → 叙事架构师播报修改进度
     └─ 通过
 ↓
-员工 B 执行（自我播报）→ CEO 最终审核
-    ├─ 不通过 → ❗回退 A 重做
+写手 执行（自我播报）→ CEO 最终审核
+    ├─ 不通过 → ❗回退叙事架构师重做
     └─ 通过 → 任务完成
 ↓
 CEO 向老板汇报
@@ -43,66 +55,65 @@ CEO 向老板汇报
 
 ---
 
-## 👥 角色职责
-
-| 角色 | Bot ID | 职责 |
-|------|--------|------|
-| CEO（我） | cli_a9203635d139dbcd | 调度+审核+决策 |
-| 员工A narrative-designer | cli_a927295acd38dcee | 世界观/章纲/人物 |
-| 员工B novel-writer | cli_a92317d3d5785cb6 | 正文批量生成 |
-| content-planner | cli_a92319273c78dcca | 题材研究 |
-
----
-
-## 📢 播报规范
+## 播报规范
 
 **工作群 ID：** `oc_ca8c8228db2c4628c5ab9715c7425896`
 
 ---
 
-### 🏢 CEO 自我播报
+### 【CEO（总指挥）】
 
-使用 `message` 工具（channel=feishu）发送，格式：
-
-#### 接收任务后
+#### 接收任务
 ```
-【CEO播报】
+【CEO（总指挥）】
 任务已接收 ✅
+
 需求理解：
 - 目标：{任务目标}
 - 关键点：{1-3个关键要素}
 - 交付标准：{具体可衡量标准}
+
 执行计划：
-- 员工A（narrative-designer）：负责 xxx
-- 员工B（novel-writer）：负责 xxx（第二阶段）
+- 叙事架构师：负责 xxx（第一阶段）
+- 写手：负责 xxx（第二阶段）
 ```
 
-#### 分配任务时
+#### 分配任务
 ```
-【CEO播报】
-👉 员工A：执行 xxx（第一阶段）
-👉 员工B：执行 xxx（第二阶段/优化）
-请员工A立即开始执行。
+【CEO（总指挥）】
+任务分配如下：
+
+👉 叙事架构师：执行 xxx（第一阶段）
+👉 写手：执行 xxx（第二阶段/优化）
+
+请叙事架构师立即开始执行。
 ```
 
-#### 审核结果（通过）
+#### 审核通过
 ```
-【CEO审核结果】
+【CEO（总指挥）审核结果】
+
 结果：✅ 通过
+
 审核要点：
 - {合格项1}
 - {合格项2}
-决策：→ 进入员工B阶段
+
+决策：→ 进入写手阶段
 ```
 
-#### 审核结果（不通过）
+#### 审核不通过
 ```
-【CEO审核结果】
+【CEO（总指挥）审核结果】
+
 结果：❌ 不通过
+
 问题：
 - {问题点1}
 - {问题点2}
-决策：→ 员工A继续执行（修改方向如下）
+
+决策：→ 叙事架构师继续执行（修改方向如下）
+
 修改建议：
 - {具体修改方向1}
 - {具体修改方向2}
@@ -110,161 +121,98 @@ CEO 向老板汇报
 
 ---
 
-### 👨‍💻 员工 A 自我播报（narrative-designer）
-
-使用 `exec` 运行脚本，自我 Bot 发消息：
-
-```bash
-node /root/.openclaw/workspace/skills/novel-writing-command/send-as-bot.js \
-  "cli_a927295acd38dcee" \
-  "squevfJj0VbpQyarqjzoceAATnRsQdS0" \
-  "oc_ca8c8228db2c4628c5ab9715c7425896" \
-  "【员工A - narrative-designer】
-内容：xxx"
-```
+### 【叙事架构师】
 
 #### 接收任务
 ```
-【员工A - narrative-designer】
-已接收CEO任务 ✅
-任务内容：{任务描述}
+【叙事架构师】
+已接收任务 ✅
+任务内容：{具体任务描述}
 开始执行
 ```
 
 #### 执行进度
 ```
-【员工A进度】
-当前步骤：{当前步骤}
-已完成：{已完成}
-下一步：{下一步}
+【叙事架构师进度】
+当前步骤：{当前执行步骤}
+已完成：{已完成内容}
+下一步：{下一步计划}
 ```
 
 #### 完成提交
 ```
-【员工A完成】
+【叙事架构师完成】
 执行已完成 ✅
+
 成果：
 - {交付物1}
 - {交付物2}
+
 请求CEO审核
 ```
 
 ---
 
-### 🧪 员工 B 自我播报（novel-writer）
-
-使用 `exec` 运行脚本，自我 Bot 发消息：
-
-```bash
-node /root/.openclaw/workspace/skills/novel-writing-command/send-as-bot.js \
-  "cli_a92317d3d5785cb6" \
-  "cAMsLGIIWwuJV8c35uY3YerrgVjcAc8n" \
-  "oc_ca8c8228db2c4628c5ab9715c7425896" \
-  "【员工B - novel-writer】
-内容：xxx"
-```
+### 【写手】
 
 #### 接收任务
 ```
-【员工B - novel-writer】
-已接收任务 ✅
-目标：在A基础上优化/补全 xxx
+【写手】
+已接收优化任务 ✅
+目标：在叙事架构师基础上优化/补全 xxx
 开始执行
 ```
 
 #### 执行进度
 ```
-【员工B进度】
+【写手进度】
 优化点：{当前优化内容}
-当前进展：{进展}
+当前进展：{进展描述}
 下一步：{下一步}
 ```
 
 #### 完成提交
 ```
-【员工B完成】
+【写手完成】
 优化完成 ✅
+
 优化内容：
 - {优化点1}
 - {优化点2}
+
 请求CEO最终审核
 ```
 
 ---
 
-## ⚠️ 员工任务模板（spawn 时使用）
+## Bot 发消息脚本
 
-spawn 员工时，task 内容必须包含以下三个步骤，**不得删减**：
+员工用 `exec` 运行 `send-as-bot.js` 自我播报：
 
-### A类任务模板（narrative-designer）
-
-```
-## 任务：{具体任务}
-
-## 步骤一：发群播报（接收任务）
-exec 运行：
+```bash
 node /root/.openclaw/workspace/skills/novel-writing-command/send-as-bot.js \
-  "cli_a927295acd38dcee" \
-  "squevfJj0VbpQyarqjzoceAATnRsQdS0" \
+  "{BotAppId}" \
+  "{BotAppSecret}" \
   "oc_ca8c8228db2c4628c5ab9715c7425896" \
-  "【员工A - narrative-designer】
-已接收CEO任务 ✅
-任务内容：xxx
-开始执行"
-
-## 步骤二：执行过程中发进度播报（每完成一个子任务发一次）
-exec 运行同样的脚本，内容改为进度格式。
-
-## 步骤三：完成后
-1. 将成果写入共享目录
-2. 发完成播报（exec 脚本）
-3. 向 CEO（韩猛）汇报：使用 message 工具（channel=feishu）发消息给 ou_5c1427fa290cd1f4ba3c5b24085a7a77
+  "【中文名】
+播报内容..."
 ```
 
-### B类任务模板（novel-writer）
+**各 Bot 凭证：**
 
-```
-## 任务：{具体任务}
-
-## 步骤一：发群播报（接收任务）
-exec 运行：
-node /root/.openclaw/workspace/skills/novel-writing-command/send-as-bot.js \
-  "cli_a92317d3d5785cb6" \
-  "cAMsLGIIWwuJV8c35uY3YerrgVjcAc8n" \
-  "oc_ca8c8228db2c4628c5ab9715c7425896" \
-  "【员工B - novel-writer】
-已接收优化任务 ✅
-目标：在A基础上优化 xxx
-开始执行"
-
-## 步骤二：执行过程中发进度播报
-exec 运行同样的脚本。
-
-## 步骤三：完成后
-1. 将成果写入共享目录
-2. 发完成播报（exec 脚本）
-3. 向 CEO 汇报：使用 message 工具（channel=feishu）发消息给 ou_5c1427fa290cd1f4ba3c5b24085a7a77
-```
+| 中文名 | Bot ID | App Secret |
+|--------|--------|------------|
+| 内容策划 | cli_a92319273c78dcca | dW66idnGC1gEEAX0rJTyEgPn61JgtMoy |
+| 叙事架构师 | cli_a927295acd38dcee | squevfJj0VbpQyarqjzoceAATnRsQdS0 |
+| 写手 | cli_a92317d3d5785cb6 | cAMsLGIIWwuJV8c35uY3YerrgVjcAc8n |
 
 ---
 
-## 🔁 审核与回退机制
-
-### 阶段一（A）
-- ❌ 不通过 → A 继续执行（必须带修改方向）
-- ✅ 通过 → 进入阶段二（B）
-
-### 阶段二（B）
-- ❌ 不通过 → ❗ 回退 A 重做
-- ✅ 通过 → 任务完成
-
----
-
-## 🚨 强制规则
+## 强制规则
 
 1. **不允许静默** — 每步必须自我播报
 2. **CEO 必须给结构化反馈** — 问题点 + 修改建议
-3. **所有失败必须回到 A** — B 不修 Bug，A 负责兜底
+3. **所有失败必须回到叙事架构师** — 写手不修 Bug，叙事架构师负责兜底
 4. **输出必须可交付**
 
 ---
@@ -283,15 +231,15 @@ shared/workspace-novel/
   outline.md
   chapters/
     001.md ...
-  narrative-designer/progress.md
-  novel-writer/progress.md
+  叙事架构师/progress.md
+  写手/progress.md
 ```
 
 ---
 
 ## 🎯 一句话总结
 
-- **CEO** = 调度 + 审核 + 决策（自我播报）
-- **员工A** = 执行 + 修复 + 兜底（自我 Bot 播报）
-- **员工B** = 优化 + 提升（自我 Bot 播报）
-- **全程必须像在直播工作**
+- **CEO** = 调度 + 审核 + 决策
+- **叙事架构师** = 执行 + 修复 + 兜底
+- **写手** = 优化 + 提升
+- **全程像在直播工作**
