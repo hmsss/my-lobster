@@ -1,0 +1,38 @@
+{
+  "schema": "task-state-v1",
+  "description": "员工任务状态机，包含完整的任务生命周期跟踪",
+  "agents": {
+    "product-manager": {
+      "status": "idle",
+      "currentTask": null,
+      "startedAt": null,
+      "lastCheckAt": null,
+      "lastProgressAt": null,
+      "progress": null,
+      "completedAt": null
+    },
+    "engineering-full-stack-developer": {
+      "status": "working",
+      "currentTask": "fix-bugs-001-002",
+      "startedAt": "2026-03-19T02:05:00+08:00",
+      "lastCheckAt": "2026-03-19T02:22:00+08:00",
+      "lastProgressAt": "2026-03-19T02:20:00+08:00",
+      "progress": "代码开发完成",
+      "completedAt": "2026-03-19T02:41:00+08:00"
+    },
+    "testing-senior-qa-engineer": {
+      "status": "working",
+      "currentTask": "regression-test",
+      "startedAt": null,
+      "lastCheckAt": null,
+      "lastProgressAt": null,
+      "progress": null,
+      "completedAt": null
+    }
+  },
+  "lastUpdated": "2026-03-19T02:56:00+08:00",
+  "rules": {
+    "statusCheckInterval": 300,
+    "workingTimeout": 600
+  }
+}

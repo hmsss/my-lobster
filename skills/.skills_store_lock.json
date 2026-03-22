@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "feishu-bot-manager": {
+      "name": "Feishu Bot Manager",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=feishu-bot-manager",
+      "source": "skillhub",
+      "version": "1.0.0"
+    }
+  }
+}
