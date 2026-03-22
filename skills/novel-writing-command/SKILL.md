@@ -1,6 +1,6 @@
 ---
 name: novel-writing-command
-description: 长篇小说协作写作工作流。当 CEO 下达写作任务时，统筹 narrative-designer（章纲策划）和 novel-writer（正文作家）执行，成果统一汇报给 CEO。
+description: 长篇小说协作写作工作流。CEO 下达任务给员工，CEO 审核每个产出物，通过后才进入下一步骤，形成「执行→审核→通过/打回」循环。
 invocations:
   - words:
       - 开始写小说
@@ -13,119 +13,82 @@ invocations:
 
 # novel-writing-command
 
-长篇小说协作写作工作流。CEO 下达任务 → CEO 审核 → 分配给员工 → 员工执行 → CEO 汇总成果 → 汇报给老板。
-
 ## 核心原则
 
 **三层隔离：**
 - 老板（韩猛） ↔ CEO（我）：任务下达 / 成果汇报
-- CEO ↔ 员工：任务分配 / 进度监督 / 结果汇总
+- CEO ↔ 员工：任务分配 / 审核产出 / 结果汇总
 - 员工之间：**不直接沟通**，通过 CEO 中转
 
-**共享工作空间：**
-- 根目录：`/root/.openclaw/workspace/shared/workspace-novel/`
-- 公共文件：世界观设定、章纲、人物卡、伏笔地图、总进度
-- 个人文件：`{agent-id}/progress.md`、`{agent-id}/SESSION-STATE.md`
+**工作流核心：每步必须 CEO 审核，通过才到下一步**
 
----
-
-## 工作流程
-
-### Phase 0：任务接收与审核
-
-CEO（我）接收老板的任务后，先审核：
-
-1. **任务是否清晰？** — 题材/规模/方向是否明确
-2. **需要哪些员工？** — narrative-designer + novel-writer（默认）
-3. **员工是否有足够上下文？** — 检查共享空间里的已有产出
-
-如果任务不清晰，向老板确认后再执行。
-
-### Phase 1：任务分解
-
-将任务分解为明确的子任务，分配给对应员工。
-
-**典型任务分配：**
-
-| 子任务 | 负责人 | 交付物 |
-|--------|--------|--------|
-| 世界观设定 | narrative-designer | `worldguide.md` |
-| 人物卡设计 | narrative-designer | `character-sheet.md` |
-| 伏笔地图 | narrative-designer | `foreshadowing-map.md` |
-| 章纲生成 | narrative-designer | `outline.md`（≥50章） |
-| 正文批量生成 | novel-writer | `chapters/001.md` 等 |
-
-### Phase 2：任务下达（仅通过飞书消息）
-
-通过 `feishu_im_user_message` 工具，以用户身份向对应员工发送任务。
-
-**narrative-designer 下达模板：**
 ```
-【写作任务】
-
-题材：{题材描述}
-规模：{字数要求}
-核心卖点：{1-3句话}
-
-请按以下顺序完成：
-
-1. 世界观设定 → 写入 shared/workspace-novel/worldguide.md
-2. 人物卡 → 写入 shared/workspace-novel/character-sheet.md
-3. 伏笔地图 → 写入 shared/workspace-novel/foreshadowing-map.md
-4. 详细章纲（≥{N}章）→ 写入 shared/workspace-novel/outline.md
-
-每完成一项，在群里汇报进度。
-```
-
-**novel-writer 下达模板：**
-```
-【正文写作任务】
-
-当前章纲：shared/workspace-novel/outline.md
-世界观：shared/workspace-novel/worldguide.md
-人物卡：shared/workspace-novel/character-sheet.md
-
-请按章纲顺序生成正文，每章写入 shared/workspace-novel/chapters/{N}.md。
-
-完成后更新 shared/workspace-novel/{your-id}/progress.md。
-
-每10章在群里汇报一次进度。
-```
-
-### Phase 3：进度跟踪
-
-员工在共享空间更新进度文件：
-- `{agent-id}/progress.md` — 实时工作状态
-- `{agent-id}/SESSION-STATE.md` — 当前任务上下文
-
-CEO 定期检查共享空间，发现问题主动介入。
-
-### Phase 4：成果汇总
-
-员工完成后，CEO 汇总：
-- 检查各交付物是否完整
-- 更新 `shared/workspace-novel/progress.md`
-- 向老板汇报最终成果
-
-### Phase 5：汇报（飞书群）
-
-每次关键节点在飞书群汇报：
-
-**工作群 ID：** `oc_ca8c8228db2c4628c5ab9715c7425896`
-
-**汇报模板：**
-```
-【{阶段}完成】
-
-负责人：{agent-name}
-完成内容：{具体描述}
-文件位置：{路径}
-下一步：{下一步计划}
+员工执行 → CEO 审核
+    ├─ 通过 → 下一步或任务完成
+    └─ 不通过 → 员工重新执行 → CEO 再次审核（循环直到通过）
 ```
 
 ---
 
-## 共享文件结构
+## 标准工作流（员工执行阶段）
+
+### Step 1：CEO 下达任务给员工 A
+
+通过 `feishu_im_user_message` 以用户身份发送任务。
+
+### Step 2：员工 A 执行
+
+员工在自己的环境中完成任务。
+
+### Step 3：CEO 审核员工 A 的产出
+
+CEO 检查：
+- 交付物是否完整？
+- 质量是否达标？
+- 是否有逻辑漏洞？
+
+**审核结果：**
+- ✅ **通过** → Step 4（下达任务给员工 B 或任务完成）
+- ❌ **不通过** → Step 2（打回员工 A 重做，重新执行）
+
+### Step 4（可选）：CEO 下达任务给员工 B
+
+员工 B 开始执行。
+
+### Step 5：CEO 审核员工 B 的产出
+
+同上循环。
+
+### Step 6：任务完成，CEO 向老板汇报
+
+---
+
+## 本次小说项目流程
+
+**当前状态：等待 narrative-designer 完成**
+
+### 阶段一：章纲策划（narrative-designer）
+```
+CEO 下达任务 → narrative-designer 执行 → CEO 审核
+    ├─ 通过 → 阶段二
+    └─ 不通过 → narrative-designer 重做 → CEO 再次审核
+```
+
+### 阶段二：正文生成（novel-writer）
+```
+CEO 下达任务 → novel-writer 执行 → CEO 审核
+    ├─ 通过 → 继续下一批章节
+    └─ 不通过 → novel-writer 重做 → CEO 再次审核
+```
+
+### 阶段三：终审（如有）
+CEO 汇总全部成果，向老板汇报。
+
+---
+
+## 共享工作空间
+
+**根目录：** `/root/.openclaw/workspace/shared/workspace-novel/`
 
 ```
 shared/workspace-novel/
@@ -135,14 +98,13 @@ shared/workspace-novel/
   character-sheet.md      # 人物卡（narrative-designer）
   foreshadowing-map.md    # 伏笔地图（narrative-designer）
   outline.md              # 章纲（narrative-designer）
-  state-snapshot.json    # 当前状态快照（自动更新）
-  chapters/              # 正文目录
+  state-snapshot.json    # 状态快照
+  chapters/              # 正文目录（novel-writer）
     001.md
-    002.md
     ...
   narrative-designer/
     progress.md           # 工作进度
-    SESSION-STATE.md      # 工作状态
+    SESSION-STATE.md
   novel-writer/
     progress.md
     SESSION-STATE.md
@@ -150,34 +112,39 @@ shared/workspace-novel/
     progress.md
 ```
 
----
-
-## CEO 审核清单
-
-每次员工汇报后，CEO 必须检查：
-
-- [ ] 交付物是否符合要求？
-- [ ] 是否有逻辑漏洞或矛盾？
-- [ ] 是否需要老板介入决策？
-- [ ] 是否更新了 progress.md？
-
-如有异常，主动向老板汇报。
+**进度文件实时更新规则：**
+- 员工每次产出后立即更新自己的 `progress.md`
+- CEO 审核通过后更新 `progress.md` 全局状态
 
 ---
 
-## 员工管理
+## 员工配置
 
-### narrative-designer
-- 飞书 Bot ID：`cli_a927295acd38dcee`
-- 擅长：世界观、人物、章纲、伏笔
-- 工作文件：`shared/workspace-novel/narrative-designer/progress.md`
+| 员工 | 飞书 Bot | 擅长领域 | 当前状态 |
+|------|---------|---------|---------|
+| narrative-designer | cli_a927295acd38dcee | 世界观/章纲/伏笔 | 🔄 章纲生成中 |
+| novel-writer | cli_a92317d3d5785cb6 | 正文批量生成 | ⏳ 待启动 |
+| content-planner | cli_a92319273c78dcca | 题材研究 | ⏳ 待命 |
 
-### novel-writer
-- 飞书 Bot ID：`cli_a92317d3d5785cb6`
-- 擅长：正文写作、风格统一
-- 工作文件：`shared/workspace-novel/novel-writer/progress.md`
+---
 
-### content-planner
-- 飞书 Bot ID：`cli_a92319273c78dcca`
-- 擅长：题材研究、策划案
-- 工作文件：`shared/workspace-novel/content-planner/progress.md`
+## 审核清单（CEO 审核产出时使用）
+
+- [ ] 交付物文件是否已写入正确路径？
+- [ ] 内容是否完整（世界观/人物/章纲各要素齐全）？
+- [ ] 逻辑是否自洽？（特别是世界观设定有无矛盾）
+- [ ] 字数/规模是否达标？
+- [ ] 伏笔是否有埋有收？
+- [ ] 可以向老板汇报"通过"吗？
+
+如有不通过，明确指出问题，打回员工重做。
+
+---
+
+## 工作群
+
+**群 ID：** `oc_ca8c8228db2c4628c5ab9715c7425896`
+
+**汇报时机：**
+- 每个阶段审核通过后，在群里发进度汇报
+- 最终成果完成后，向老板（韩猛）汇报
