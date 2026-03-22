@@ -7,12 +7,22 @@
 | Agent ID | 角色 | 类型 | 飞书 Bot | 擅长领域 | 状态 |
 |----------|------|------|---------|---------|------|
 | (CEO) | 总指挥官 | permanent | 主 Agent | 任务分析、人员调度、团队管理 | active |
-| content-planner | 内容策划 | permanent | cli_a92319273c78dcca | 热门小说题材分析、大纲拟定 | active |
+| content-planner | 内容策划 | permanent | cli_a92319273c78dcca | 题材研究、策划案 | active |
+| narrative-designer | 叙事架构师 | permanent | cli_a927295acd38dcee | 世界观、章纲、伏笔设计 | active |
+| novel-writer | 正文作家 | permanent | cli_a92317d3d5785cb6 | 长篇正文批量生成 | active |
 
 ## 协作群
 
 | 群名称 | 群 ID | 用途 | 成员 |
 |--------|-------|------|------|
+| 小说工作群 | oc_ca8c8228db2c4628c5ab9715c7425896 | 长篇小说协作、进度汇报 | CEO、content-planner、narrative-designer、novel-writer |
+
+**工作流程：**
+1. CEO 接收老板任务 → 审核 → 分配给员工
+2. 员工执行 → 在群里汇报进度 → 更新 progress.md
+3. CEO 汇总 → 向老板汇报最终成果
+
+**共享工作空间：** `shared/workspace-novel/`
 
 ## 通信规则
 
